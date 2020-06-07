@@ -106,91 +106,52 @@ class Simulator():
                 except: 
                     pass
         return num
-
-
-    def step(self, action, state): 
-        """ 
-        Appears to work currently 
-        
-        
-        """
-        
-        #print('STEP_FUNCTION')
-        
-        #print(self.transition)
-        
-        action_index = self.get_index(action)
-        #print(action, action_index)
-        #print(state_index)
-        #print(state)
-        #print(self.transition)
-        new_state = {} 
-        
-        #current_state_index = []
-        #next_state_tuple = []
-        
-        #print(self.action_name)
-        
-        obs_dict = {}
-        #reward_index = None
-        
-        for key in state.keys():
-            """
-            Calculate the new state 
-            """
+    
+    def get_observation_tuple(self, action, new_state, key): 
+        observation_table = self.observation[key] 
+        action_index = self.get_index(action) 
+        observation_tuple = [] 
+        observation_tuple.append(action_index)
+        for i in new_state: 
+            state_index = self.get_index(new_state[i])
+            observation_tuple.append(state_index)
             
-            #print('key',key) #i.e. what's updating 
-            var_to_update = state[key]
-            #print('var_to_update',var_to_update)
-            cond_vars = self.state_variables[key]
-            #print('cond_vars',cond_vars)
-            
-            update_list = [] 
-            for i in cond_vars: 
-                if i in self.action_name: 
-                    #print(i,'////')
-                    action_index = self.get_index(action)
-                    update_list.append(action_index)
-                if i in self.state_name:
-                    #print('cccc',i)
-                    state_index = self.get_index(state[i])
-                    #print(state_index,state[i])
-                    update_list.append(state_index) 
-                    
-            update_index = tuple(update_list)
-            #print('update_index',update_index)
-            #reward_index = update_index
-            
-            distr = self.transition[key][update_index]
-            choice = np.random.choice(self.state[key][0],p=distr)
-            #choice = np.random.choice(self.state[key])
-            new_state[key]=choice 
-        #print('old state', state)
-        #print('new_state',new_state)
-        
-        #print(self.reward)
-        #print(self.observation)
+        #print('obs_tuple',observation_tuple)
+        observation_tuple = tuple(observation_tuple) 
+        return observation_tuple
+    
+    def get_new_observation(self,action,new_state): 
+        obs_dict = {} 
         for key in self.observation: 
             observation_table = self.observation[key] 
-            action_index = self.get_index(action) 
-            observation_tuple = [] 
-            observation_tuple.append(action_index)
-            for i in new_state: 
-                state_index = self.get_index(new_state[i])
-                observation_tuple.append(state_index)
-                
-            #print('obs_tuple',observation_tuple)
-            observation_tuple = tuple(observation_tuple)
-                
-            #print(self.observation_names)
+            observation_tuple = self.get_observation_tuple(action, new_state, key)
             distr = observation_table[observation_tuple]
-            #print('----',distr)
-            #print(self.observation_names)
             obs_dict[key] = np.random.choice(self.observation_names[key],p=distr)
-            #print(obs_dict)
-            
-            
-            
+        return obs_dict 
+    
+    def get_action_tuple(self): 
+        pass 
+    
+    def get_state_tuple(self, action, state, key): 
+        
+        cond_vars = self.state_variables[key]
+        update_list = [] 
+        for i in cond_vars: 
+            if i in self.action_name: 
+                #print(i,'////')
+                action_index = self.get_index(action)
+                update_list.append(action_index)
+            if i in self.state_name:
+                #print('cccc',i)
+                state_index = self.get_index(state[i])
+                #print(state_index,state[i])
+                update_list.append(state_index) 
+                
+        update_index = tuple(update_list) 
+        
+        return update_index
+    
+    def get_reward_tuple(self, action, state): 
         reward_index = []
         reward_index.append(self.get_index(action))
         for key in state.keys(): 
@@ -198,89 +159,40 @@ class Simulator():
             #print(state_var)
             state_var_index = self.get_index(state_var)
             reward_index.append(state_var_index)
-        reward_index = tuple(reward_index)
-        #print(self.reward.shape)
-        #print('+++++',reward_index)
-        step_reward = self.reward[reward_index]
-        #print('[',step_reward)
-        #step_reward = 0
-        
-        
-        
-        #print(state, action)
-        """
-        
-        #for key in state.keys(): 
-            
-            This will lead to issues - but 
-            actually want to pass a tuple in for the second transition part 
-            issue is to do with conditional variables 
-            should probably try and get a list of the conditional vars (e.g. rover_0, rock_0)
-            to get a changeable size for the tuple that will need to be passed to the transition 
-            
-            may want to build new functions into the parser to specifically enable this 
-            another option is to convert everything to pandas? 
-            
-            
-            May need to get rid of the pairs issue????? 
-            
-            
-            
-            
-            print('key',key)
-            print(self.transition[key].shape)
-            #print('conditional_vars',self.state_variables[key])
-            
-            cond_vars = self.state_variables[key]
-            print('cond vars',cond_vars)
-            
-            for i in cond_vars:
-                state_index = self.get_index(i)
-                print('si',state_index)
-            
-            
-            
-            current_state_index.append(state_index)
-            print(current_state_index)
-            print(state_index)
-            
-
-            distribution = self.transition[key][action_index,state_index]
-            print(distribution)
-            choice = np.random.choice(self.state[key][0],p=distribution)
-            new_state[key] = choice
-            choice_index = self.get_index(choice)
-            next_state_tuple.append(choice_index)
-        
-        current_state_index = tuple(current_state_index)
-        next_state_tuple = tuple(next_state_tuple)
-        
-
-        
-        #print(':::',self.observation)
-        #print(self.observation_names)
-        
-        
-        
-        """
-        """
-        for key in self.observation.keys(): 
-            
-        
-            observation_dist = self.observation[key][action_index,next_state_tuple][0]
-            #print(observation_dist)
-        
-            step_observation = np.random.choice(self.observation_names[key],p=observation_dist)
-            obs_dict[key] = step_observation 
-            #print(step_observation)
-            
-        #print(step_observation)
+        reward_index = tuple(reward_index) 
+        return reward_index
     
-        #step_observation = self.observation_name.index(step_observation)
+    def get_new_state(self, action, state): 
+        new_state = {} 
         
-        print(new_state,obs_dict,step_reward)
+        for key in state.keys():
+            """
+            Calculate the new state 
+            """
+            update_index = self.get_state_tuple(action, state, key)
+            distr = self.transition[key][update_index]
+            choice = np.random.choice(self.state[key][0],p=distr)
+            new_state[key]=choice 
+        
+        return new_state 
+
+
+    def step(self, action, state): 
+        """ 
+        Takes the action (str), state (dict) 
+        
+        Returns the next state (dict), observation (dict), and reward (float)
+        
         
         """
+        
+        #print('STEP_FUNCTION')
+
+        new_state = self.get_new_state(action, state)
+        obs_dict = self.get_new_observation(action, new_state)
+            
+        reward_index = self.get_reward_tuple(action, state)
+        step_reward = self.reward[reward_index]
         
         return new_state, obs_dict, step_reward
     

@@ -22,7 +22,7 @@ from keras.optimizers import Adam
 # Tiger 
 # rockSample-7_8
     
-def main(file = '../examples/rockSample-7_8.pomdpx', 
+def main(file = '../examples/Tiger.pomdpx', 
          control = 'Random', 
          training_period = 10,
          testing_period = 1): 
@@ -31,7 +31,7 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
     state = simulator.initial_state
     state_name = simulator.state_name
     total_reward = 0
-    #q_agent = QLearning(file)
+    
     obs = state  # initial state = observation 
     
     
@@ -61,7 +61,34 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
             print('State ', state,'\n Observation ',step_observation,'\n', step_reward,'\n')
             state = next_state
             total_reward += step_reward 
-        print('Random Agent :', total_reward)
+        print('Random Agent :', total_reward) 
+        
+    if control == 'QLearning': 
+        q_agent = QLearning(file)
+        for i in range(training_period): 
+            done = False
+            episode_reward = 0 
+            max_steps = 20 
+            n_step = 0 
+            while not done: 
+                n_step +=1 
+                if n_step > max_steps: 
+                    done = True 
+                action = q_agent.get_action(obs) 
+                next_state, next_obs, step_reward = simulator.step(action,state)
+                print('State ', state,'\n Observation ',step_observation,'\n', step_reward,'\n')
+                state = next_state
+                episode_reward += step_reward 
+            print(episode_reward)
+    
+    if control == 'DQN': 
+        pass 
+    
+    if control == 'DRQN': 
+        pass 
+    
+    if control == 'ADRQN': 
+        pass 
             
             
 

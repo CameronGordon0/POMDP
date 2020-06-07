@@ -25,10 +25,11 @@ class QLearning(Simulator):
         # note - should actually be on beliefs??
         # may otherwise go tabular on history?
         
-        self.q_matrix = np.zeros([len(self.observation_name),len(self.action_name)])
+        self.q_matrix = np.zeros([len(self.observation_names),len(self.action_name)])
         
     def greedy_action(self,obs): 
-        return np.argmax(self.q_matrix[obs])
+        index = self.get_index(obs)
+        return np.argmax(self.q_matrix[index])
     
     def get_action(self, obs): 
         action_greedy = self.greedy_action(obs)
