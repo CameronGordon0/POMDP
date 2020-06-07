@@ -4,6 +4,27 @@
 Created on Mon May 25 12:28:45 2020
 
 @author: camerongordon
+
+Difficulties for the simulator modules (issue with the different representations;
+                                        currently have three for most of the variables (dict, str, int)) 
+
+Should note that the dict representation was chosen deliberately to handle the hander problems. 
+
+Should try to keep consistent entries.
+
+If necessary, should perform the conversion outside the entry module (to prevent breaking other components) 
+
+Need to do thinking around the qlearning module - the construction of the Q-Matrix
+Should it be belief x action?? 
+
+May be a tricky issue to decide how to handle this - eventually needs to pass to numpy matrices (tabular) & as vectors for the keras implementations. 
+
+Creating a standard way of handling may be useful. 
+
+Experimentation - may want an option to run QLearning etc on the fully observable state. Would be a good cross-check (esp for rockSample) 
+
+
+
 """
 
 from parser_main import Parser 
@@ -22,7 +43,7 @@ from keras.optimizers import Adam
 # Tiger 
 # rockSample-7_8
     
-def main(file = '../examples/Tiger.pomdpx', 
+def main(file = '../examples/rockSample-7_8.pomdpx', 
          control = 'Random', 
          training_period = 10,
          testing_period = 1): 
@@ -93,6 +114,7 @@ def main(file = '../examples/Tiger.pomdpx',
                 experience = obs, action, step_observation, step_reward, done 
                 
                 # issue with obs having been set as state 
+                
                 
                 # may be a good idea to plan out the QLEARNING module. Run on beliefs? 
                 
