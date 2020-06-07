@@ -11,6 +11,7 @@ import numpy as np
 from qlearning import QLearning
 from dqn import DQN
 from pomdp_simulator import Simulator
+import random 
 
 from collections import deque
 from keras.models import Sequential
@@ -22,7 +23,7 @@ from keras.optimizers import Adam
 # rockSample-7_8
     
 def main(file = '../examples/rockSample-7_8.pomdpx', 
-         control = 'QLearning', 
+         control = 'Random', 
          training_period = 10,
          testing_period = 1): 
     simulator = Simulator(file)
@@ -34,7 +35,7 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
     obs = state  # initial state = observation 
     
     
-    control = 'Human' 
+    #control = 'Human' 
     if control == 'Human':
         for i in range(training_period):
             print('step ', i+1)
@@ -44,10 +45,25 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
             print('Took ', action_name)
         
             next_state, step_observation, step_reward = simulator.step(action_name,state)
-            print(next_state,'\n', step_observation,'\n', step_reward,'\n')
+            print(step_observation,'\n', step_reward,'\n')
             state = next_state
             total_reward += step_reward 
-    print(total_reward)
+        print('Human Agent ', total_reward)
+    
+    if control == 'Random': 
+        for i in range(training_period): 
+            print('step ', i+1) 
+            action_name = list(simulator.actions.keys())[0] 
+            action_taken = random.choice(simulator.actions[action_name]) 
+            print('Took', action_taken) 
+            
+            next_state, step_observation, step_reward = simulator.step(action_taken,state)
+            print('State ', state,'\n Observation ',step_observation,'\n', step_reward,'\n')
+            state = next_state
+            total_reward += step_reward 
+        print('Random Agent :', total_reward)
+            
+            
 
     """
     # training period 

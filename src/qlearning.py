@@ -22,6 +22,9 @@ class QLearning(Simulator):
         self.initialise_q_matrix()
         
     def initialise_q_matrix(self): # observation x action pairs 
+        # note - should actually be on beliefs??
+        # may otherwise go tabular on history?
+        
         self.q_matrix = np.zeros([len(self.observation_name),len(self.action_name)])
         
     def greedy_action(self,obs): 
