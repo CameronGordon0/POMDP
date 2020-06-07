@@ -87,10 +87,13 @@ def get_reward_var(root):
 
 def get_states(root): 
     State_dict = {} 
+    name_pairs = {}
     for child in root.findall('Variable'): 
         for var in child: 
             if var.tag == 'StateVar': 
                 vnamePrev, vnameCurr = var.attrib['vnamePrev'],var.attrib['vnameCurr']
+                name_pairs[vnameCurr] = vnamePrev
+                name_pairs[vnamePrev] = vnamePrev
                 try: 
                     fullyObs = var.attrib['fullyObs']
                 except: 
@@ -105,8 +108,13 @@ def get_states(root):
                 except:
                      State_dict[vnamePrev] = None, fullyObs
                      State_dict[vnameCurr] = None, fullyObs 
-                     
-    return State_dict 
+    #print(State_dict)
+    return State_dict, name_pairs 
+
+
+
+
+
 
 
 """
@@ -120,23 +128,33 @@ def get_initial_belief(root):
     Gets the initial belief for the POMDP. 
     """
     for child in root.findall('InitialStateBelief') :
+        
+        INITIAL_DICT = {}
         for cond in child.findall('CondProb'): 
+            name = 'Null'
             for var in cond.findall('Var'): 
+                name = var.text
                 varlist = [var.text] # note that the var is restricted to vnameCurr states [i.e. to]
             for parent in cond.findall('Parent'): 
                 parentlist = parent.text.split(' ') 
 
                 initial_belief = initialise_matrix(root,varlist,parentlist)
+                print('init',initial_belief)
             
             for param in cond.findall('Parameter'): 
+                #print('???',param.text)
                 if 'type' in param.attrib:
                     if param.attrib['type'] != 'TBL': 
                         print('Only TBL Parameter Implemented')
                         raise ValueError 
                 for entry in param.findall('Entry'): 
+                    #print(entry)
                     fill_table(root,varlist,parentlist,entry,initial_belief)
                     
-    return initial_belief 
+            INITIAL_DICT[name] = initial_belief
+            #print(INITIAL_DICT)
+                    
+    return INITIAL_DICT 
 
 
 def get_state_transition(root): 
@@ -150,13 +168,23 @@ def get_state_transition(root):
     
     for child in root.findall('StateTransitionFunction') :
         
-        CONDITION_TABLE = []
+        CONDITION_DICT = {}
+        VARIABLE_DICT = {} 
+        #CONDITION_TABLE = []
         for cond in child.findall('CondProb'): 
+            name = 'NULL'
             for var in cond.findall('Var'): 
+                # note that variable should contain only one entry, the 'to''
+                name = var.text
+                states, pairs = get_states(root)
+                name = pairs[name]
                 varlist = [var.text] # note that the var is restricted to vnameCurr states [i.e. to]
             for parent in cond.findall('Parent'): 
+                # note that the parentlist is the conditional variables (i.e. 'from')
                 parentlist = parent.text.split(' ') 
+                VARIABLE_DICT[name] = parentlist 
                 state_transition_table = initialise_matrix(root,varlist,parentlist)
+                #print('ppp',state_transition_table.shape)
             
             for param in cond.findall('Parameter'): 
                 if 'type' in param.attrib:
@@ -166,8 +194,10 @@ def get_state_transition(root):
                 
                 for entry in param.findall('Entry'): 
                     fill_table(root,varlist,parentlist,entry,state_transition_table)
-            CONDITION_TABLE.append(state_transition_table)
-    return CONDITION_TABLE
+            #CONDITION_TABLE.append(state_transition_table)
+            CONDITION_DICT[name]=state_transition_table
+    #print('???',CONDITION_DICT)
+    return CONDITION_DICT, VARIABLE_DICT 
 
 def get_obs_function(root): 
     """
@@ -175,10 +205,12 @@ def get_obs_function(root):
     Returns in the form of a numpy arrays of dimensions [action][new state][observation] where each entry corresponds to a probability. 
     """
     # get the O(o|s',a)
-
+    OBS_DICTIONARY = {}
     for child in root.findall('ObsFunction') :
         for cond in child.findall('CondProb'): 
+            name = 'NULL'
             for var in cond.findall('Var'): 
+                name = var.text
                 varlist = [var.text] # note that the var is restricted to obs [i.e. to]
 
             for parent in cond.findall('Parent'): 
@@ -191,8 +223,9 @@ def get_obs_function(root):
                         raise ValueError 
                 for entry in param.findall('Entry'): 
                     obs_table = fill_table(root,varlist,parentlist,entry,obs_table) 
-    
-    return obs_table
+            OBS_DICTIONARY[name] = obs_table 
+    #print(':::',OBS_DICTIONARY)
+    return OBS_DICTIONARY
 
 
 def get_reward_function(root): 
@@ -201,9 +234,10 @@ def get_reward_function(root):
     Returns in the form of a numpy array of dimension [action][state]. 
     """
     
-    for child in root.findall('RewardFunction') :
+    for child in root.findall('RewardFunction'):
         for func in child.findall('Func'): 
             for var in func.findall('Var'): 
+                #print(var.text)
                 varname = var.text # note that the var is restricted to reward_agent [i.e. to]
             for parent in func.findall('Parent'): 
                 parentname = parent.text.split(' ') 
@@ -219,8 +253,11 @@ def get_reward_function(root):
                         raise ValueError 
                 for entry in param.findall('Entry'): 
                     for instance in entry.findall('Instance') :
+                        # may need to change this???? 
+                        
                         reward_table = get_numpy_reward(root,parentname,entry,instance, reward_table)
-
+    #print('reward_table',reward_table.shape)
+    #print(reward_table)
     return reward_table
 
 
@@ -248,7 +285,9 @@ def initialise_matrix(root,varlist,parentlist):
     """
     
     newlist = parentlist + varlist
+    #print(newlist,'000')
     validlist = get_valid_list(root,newlist)
+    #print(validlist,'000')
     dims = get_list_dimensions(validlist)
     return np.zeros(dims)
 
@@ -339,7 +378,9 @@ def get_indices_for_update(instance_to_parse,dims,validlist):
     results = []
     running_output = []
     maxlen = len(instance_to_parse)
+    #print(validlist)
     for i in range(0,len(instance_to_parse)):
+        #print(i)
         if instance_to_parse[i] == '*':
             instance_to_parse[i] = slice(0,dims[i])
         if instance_to_parse[i] in validlist[i]: 
@@ -416,12 +457,14 @@ def try_all_variables(root,key):
 
     """
     action_dict = get_actions(root)
-    state_dict = get_states(root) 
+    state_dict, pairs = get_states(root) 
     obs_dict = get_observations(root)
     
     if key in action_dict: 
         valid = action_dict[key]
     elif key in state_dict: 
+        key = pairs[key]
+        #print(key)
         valid = state_dict[key][0]
     elif key in obs_dict:
         valid = obs_dict[key]

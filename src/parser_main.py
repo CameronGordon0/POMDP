@@ -23,7 +23,7 @@ class Parser():
         self.initial_belief = get_initial_belief(root)
         self.reward_table = get_reward_function(root) 
         self.obs_table = get_obs_function(root)
-        self.state_transition = get_state_transition(root)
+        self.state_transition, self.state_variable_dict = get_state_transition(root)
     
 
 
