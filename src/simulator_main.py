@@ -75,11 +75,36 @@ def main(file = '../examples/Tiger.pomdpx',
                 if n_step > max_steps: 
                     done = True 
                 action = q_agent.get_action(obs) 
-                next_state, next_obs, step_reward = simulator.step(action,state)
+                print('Main', 'get_action',action)
+                if type(action)==int: 
+                    action = list(simulator.actions.values())[0][action]
+                    # ugly way of handling it 
+                print('Took ', action)
+                next_state, step_observation, step_reward = simulator.step(action,state)
                 print('State ', state,'\n Observation ',step_observation,'\n', step_reward,'\n')
                 state = next_state
                 episode_reward += step_reward 
+                
+                
+                # may be easiest to handle the conversion to int values here 
+                # other option may be to look at the data structure in the QLearning module 
+                
+                
+                experience = obs, action, step_observation, step_reward, done 
+                
+                # issue with obs having been set as state 
+                
+                # may be a good idea to plan out the QLEARNING module. Run on beliefs? 
+                
+                print('EXPERIENCE')
+                for x in experience: 
+                    print(x,type(x))
+                q_agent.train(experience)
+                obs = step_observation
+                
             print(episode_reward)
+            
+            
     
     if control == 'DQN': 
         pass 

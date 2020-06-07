@@ -138,13 +138,10 @@ class Simulator():
         update_list = [] 
         for i in cond_vars: 
             if i in self.action_name: 
-                #print(i,'////')
                 action_index = self.get_index(action)
                 update_list.append(action_index)
             if i in self.state_name:
-                #print('cccc',i)
                 state_index = self.get_index(state[i])
-                #print(state_index,state[i])
                 update_list.append(state_index) 
                 
         update_index = tuple(update_list) 
@@ -156,13 +153,19 @@ class Simulator():
         reward_index.append(self.get_index(action))
         for key in state.keys(): 
             state_var = state[key]
-            #print(state_var)
             state_var_index = self.get_index(state_var)
             reward_index.append(state_var_index)
         reward_index = tuple(reward_index) 
         return reward_index
     
     def get_new_state(self, action, state): 
+        
+        #print('get_new_state')
+        #print('action',type(action),action)
+        #print('state', type(state), state)
+        
+        
+        
         new_state = {} 
         
         for key in state.keys():
@@ -171,6 +174,9 @@ class Simulator():
             """
             update_index = self.get_state_tuple(action, state, key)
             distr = self.transition[key][update_index]
+            
+            #print(distr)
+            
             choice = np.random.choice(self.state[key][0],p=distr)
             new_state[key]=choice 
         
@@ -195,15 +201,5 @@ class Simulator():
         step_reward = self.reward[reward_index]
         
         return new_state, obs_dict, step_reward
-    
-    
-    
 
-            
-            
-        
-        
-        
-        
-    
-    
+
