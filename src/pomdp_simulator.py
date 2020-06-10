@@ -195,11 +195,24 @@ class Simulator():
         #print('STEP_FUNCTION')
 
         new_state = self.get_new_state(action, state)
+        
+        # also need to pull out the observable parts of the state 
+        observable_state = {} 
+        for key in state: 
+            if self.state[key][1] == 'true': 
+                print(key) 
+                #print(state)#state[key])
+                observable_state[key] = state[key] 
+                print(observable_state)
+                # this is observable to the agent - need to include in the observation??? 
+            #print([self.state[key] if self.state[key][1] == 'true'])
+        
+        
         obs_dict = self.get_new_observation(action, new_state)
             
         reward_index = self.get_reward_tuple(action, state)
         step_reward = self.reward[reward_index]
         
-        return new_state, obs_dict, step_reward
+        return new_state, obs_dict, step_reward, observable_state
 
 

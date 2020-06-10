@@ -23,7 +23,9 @@ Creating a standard way of handling may be useful.
 
 Experimentation - may want an option to run QLearning etc on the fully observable state. Would be a good cross-check (esp for rockSample) 
 
+May need to consider how the 'observable' parts of the state are handled as well.
 
+E.g. in rockSample the agent knows where it is & where the rocks are?  
 
 """
 
@@ -65,7 +67,7 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
             action_name = simulator.actions[action_name][action_index]
             print('Took ', action_name)
         
-            next_state, step_observation, step_reward = simulator.step(action_name,state)
+            next_state, step_observation, step_reward, observable_state = simulator.step(action_name,state)
             print(step_observation,'\n', step_reward,'\n')
             state = next_state
             total_reward += step_reward 
@@ -78,12 +80,14 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
             action_taken = random.choice(simulator.actions[action_name]) 
             print('Took', action_taken) 
             
-            next_state, step_observation, step_reward = simulator.step(action_taken,state)
+            next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
             print('State ', state,'\n Observation ',step_observation,'\n', step_reward,'\n')
             state = next_state
             total_reward += step_reward 
         print('Random Agent :', total_reward) 
         
+        
+    """
     if control == 'QLearning': 
         q_agent = QLearning(file)
         for i in range(training_period): 
@@ -101,7 +105,7 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
                     action = list(simulator.actions.values())[0][action]
                     # ugly way of handling it 
                 print('Took ', action)
-                next_state, step_observation, step_reward = simulator.step(action,state)
+                next_state, step_observation, step_reward, observable_state = simulator.step(action,state)
                 print('State ', state,'\n Observation ',step_observation,'\n', step_reward,'\n')
                 state = next_state
                 episode_reward += step_reward 
@@ -125,9 +129,9 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
                 obs = step_observation
                 
             print(episode_reward)
-            
-            
+    """
     
+
     if control == 'DQN': 
         pass 
     
