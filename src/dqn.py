@@ -8,6 +8,11 @@ Created on Wed May 20 15:45:26 2020
 
 from pomdp_simulator import Simulator
 import numpy as np 
+from collections import deque 
+import keras 
+from keras.layers import Sequential, Dense
+from keras.optimizers import Adam 
+import random 
 
 
 class DQN(Simulator): 
