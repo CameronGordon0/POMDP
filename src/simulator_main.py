@@ -60,18 +60,19 @@ def get_stateobservation_matrix():
     
     
     
-    pass
+    pass 
 
+def numpy_conversion(observed_current_state,observation): 
+    """
+    Takes two dictionaries: 
+        observed_current_state (fully-observed part of state) 
+        observation 
 
-def control_method(simulator, control="Random", training_period = 10,verbose=True):
+    """
     
-    state = simulator.initial_state 
-    total_reward = 0 
-    action_name = list(simulator.actions.keys())[0] 
-    action_list = simulator.actions[action_name]
-    action_n = len(action_list)
-    action_space = np.zeros(action_n)
-    
+    return None 
+
+def get_observation_space(simulator): 
     initial_belief = simulator.initial_belief 
     
     #for key in simulator.state
@@ -86,7 +87,28 @@ def control_method(simulator, control="Random", training_period = 10,verbose=Tru
             length = len(initial_belief[key]) # need to change
     
     observation_space = np.zeros((len(observable_state), length+len(simulator.observation)))
-            
+    return observation_space 
+
+
+def control_method(simulator, 
+                   control="Random", 
+                   training_period = 10, 
+                   verbose=True, 
+                   history = False):
+    
+    state = simulator.initial_state 
+    #initial_belief = simulator.initial_belief 
+
+    total_reward = 0 
+    action_keys = list(simulator.actions.keys())[0] 
+    action_list = simulator.actions[action_keys]
+    action_n = len(action_list)
+    action_space = np.zeros(action_n)
+    
+    
+
+    
+    observation_space = get_observation_space(simulator)
         
     
     
@@ -98,35 +120,17 @@ def control_method(simulator, control="Random", training_period = 10,verbose=Tru
             action_taken = random.choice(action_list)
         if control == "Human": 
             action_index = int(input('What action to take:\n'+str(action_list)))
-            action_taken = simulator.actions[action_name][action_index]
+            action_taken = simulator.actions[action_keys][action_index]
         if control == "DQN": 
             print('DQN')
             print('..........................')
-            print('action_name', action_name) 
+            print('action_name', action_keys) 
             print(action_list)
             print(action_n)
             print(action_space)
             print('state',state)
             
-            print(initial_belief)
-            for i in initial_belief: 
-                print(i,len(initial_belief[i]))
-            #print(len(initial_belief))
-            
-            print(simulator.observation_names)
-            #print(observable_state)
 
-                    
-            print(observable_state)
-            print(len(simulator.observation))
-            print(len(observable_state))
-            print([observable_state.values()][0])
-            
-            """
-            idea one: pass the observation is len(fully obs) + len(observation)
-            """
-            
-            print(observation_space,len(observation_space[0]))
             
             
             # need to work through the logic of the DQN within here. 
@@ -143,6 +147,10 @@ def control_method(simulator, control="Random", training_period = 10,verbose=Tru
             
             # how would this feed through to the function? 
             
+            observable_state = None
+            observation = None 
+            
+            numpy_observation = numpy_conversion(observable_state,observation)
             
             dqn = DQN(action_space, observation_space)
             
