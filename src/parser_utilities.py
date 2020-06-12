@@ -139,7 +139,7 @@ def get_initial_belief(root):
                 parentlist = parent.text.split(' ') 
 
                 initial_belief = initialise_matrix(root,varlist,parentlist)
-                print('init',initial_belief)
+                #print('init',initial_belief)
             
             for param in cond.findall('Parameter'): 
                 #print('???',param.text)
