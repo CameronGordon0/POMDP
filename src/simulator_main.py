@@ -62,126 +62,195 @@ def get_stateobservation_matrix():
     
     pass 
 
-def numpy_conversion(observed_current_state,observation): 
+def numpy_conversion(simulator, 
+                     observed_current_state,
+                     observation): 
     """
     Takes two dictionaries: 
         observed_current_state (fully-observed part of state) 
         observation 
+        
+    Returns a numpy array responding to the indexing 
 
     """
     
-    return None 
+    observation_space = get_observation_space(simulator)
+    #print('obs_space',observation_space)
+    
+    length = 0 
+    
+    for i in observed_current_state: 
+        # need to get the index out of the list 
+        
+        obj = observed_current_state[i]
+        
+        #print(obj)
+        
+        #print(simulator.state[i][0])
+        
+        index = simulator.state[i][0].index(obj)
+        length += len(simulator.state[i][0]) 
+        
+        observation_space[index] = 1
+        
+        
+    for i in observation: 
+        # need to get the index out of the list 
+        obj = observation[i] 
+        
+        #print(obj)
+        
+        #print(simulator.observation_names[i])
+        
+        index = simulator.observation_names[i].index(obj)
+        
+        #print('test',length+index)
+        observation_space[length+index]=1
+    
+    #print(observation_space)
+    #print(len(observation_space))
+    return observation_space 
 
 def get_observation_space(simulator): 
-    initial_belief = simulator.initial_belief 
+    """
+    Best approach here may just be a flat structure 
+    
+    one hot encoding of fully observed state(s) + observation(s) 
+    
+    just run through a loop of keys for both 
+    adding through the length of the variables 
+    
+    create a 1x vector one hot encoding 
+
+
+    """
+    
+    state_key_list = simulator.state_key_list 
+    observation_key_list = simulator.observation_key_list 
+    
+    #print('...',simulator.observation_names)
     
     #for key in simulator.state
     length = 0 
-    observable_state ={} 
-    for key in initial_belief: 
+    #observable_state ={} 
+    for key in state_key_list: 
         #print(key)
         #print(simulator.state[key])
         if simulator.state[key][1]=='true': 
             #print(key)
-            observable_state[key] = len(initial_belief[key])
-            length = len(initial_belief[key]) # need to change
+            length+= len(simulator.state[key][0])
+            #length = len(initial_belief[key]) # need to change
+    for key in observation_key_list: 
+        length+= len(simulator.observation_names[key])
     
-    observation_space = np.zeros((len(observable_state), length+len(simulator.observation)))
+    observation_space = np.zeros((length,))
+    print(len(observation_space))
     return observation_space 
+
+
+def reset(simulator): 
+    state = simulator.initial_state 
+    observable_state = simulator.get_observable_state(state)
+    return state, observable_state
 
 
 def control_method(simulator, 
                    control="Random", 
                    training_period = 10, 
                    verbose=True, 
-                   history = False):
+                   history = False,
+                   maxsteps = 100):
     
-    state = simulator.initial_state 
+    # get the initial state & observation information & establish the observation_space 
+    
+    
+
+        
+    #print('\\\\\\\ ',observation)
+    
+    observation_space = get_observation_space(simulator)
+    
     #initial_belief = simulator.initial_belief 
 
     total_reward = 0 
+    
+    # define some objects for handling actions 
     action_keys = list(simulator.actions.keys())[0] 
     action_list = simulator.actions[action_keys]
     action_n = len(action_list)
-    action_space = np.zeros(action_n)
+    action_space = np.zeros(action_n) 
+    
+    dqn = DQN(action_list, observation_space)
+    
+    
     
     
 
     
-    observation_space = get_observation_space(simulator)
+    
         
     
     
     for i in range(training_period):
-        if verbose:
-            print('step',i+1)
-
-        if control == "Random": 
-            action_taken = random.choice(action_list)
-        if control == "Human": 
-            action_index = int(input('What action to take:\n'+str(action_list)))
-            action_taken = simulator.actions[action_keys][action_index]
-        if control == "DQN": 
-            print('DQN')
-            print('..........................')
-            print('action_name', action_keys) 
-            print(action_list)
-            print(action_n)
-            print(action_space)
-            print('state',state)
-            
-
-            
-            
-            # need to work through the logic of the DQN within here. 
-            # ideally, want to create this object outside whatever loop is occurring in the training period 
-            # i.e. want it to continue training 
-            
-            # really need to think about the information that's passing through to it 
-            # maybe should whiteboard it?? 
-            
-            # automatic convewrsion from dictionary to np input would be a good idea 
-            
-            # possible way to run a history would be to set up the numpy array with each row as a history?? 
-            # or to keep a short-term buffer of history? 
-            
-            # how would this feed through to the function? 
-            
-            observable_state = None
-            observation = None 
-            
-            numpy_observation = numpy_conversion(observable_state,observation)
-            
-            dqn = DQN(action_space, observation_space)
-            
+        print(i)
+        state, observable_state = reset(simulator)
+        observation = {}
+        for i in simulator.observation_key_list: 
+            observation[i] = random.choice(simulator.observation_names[i])
         
-            #print('Action taken',action_taken)
-        next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
         
-        # need to do some conversion to this representation?? 
+        
         if verbose: 
-            print('Action taken',action_taken)
-            print('State ', next_state,'\n Observation ',step_observation,'\n', step_reward,'\n')
+            print('a', i)
         
-        if control == "DQN": 
-            pass # train 
-        state = next_state
-        total_reward += step_reward 
+        for j in range(maxsteps): 
+            
+            if verbose:
+                print('step',j+1)
     
-    print(control,total_reward)
+            if control == "Random": 
+                action_taken = random.choice(action_list)
+            if control == "Human": 
+                action_index = int(input('What action to take:\n'+str(action_list)))
+                action_taken = simulator.actions[action_keys][action_index]
+            if control == "DQN": 
+                print('DQN')
+                print('..........................')
+    
+    
+                
+                numpy_observation = numpy_conversion(simulator,observable_state,observation) 
+                
+                action_index= dqn.act(numpy_observation)
+                print('action_index_dqn',action_index)
+                action_taken = simulator.actions[action_keys][action_index]
+                print('look here Cameron', action_taken)
+                
+            
+                #print('Action taken',action_taken)
+            next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
+            
+            # need to do some conversion to this representation?? 
+            if verbose: 
+                print('Action taken',action_taken)
+                print('State ', next_state,'\n Observation ',step_observation,'\n', step_reward,'\n')
+            
+            if control == "DQN": 
+                pass # train 
+            state = next_state
+            total_reward += step_reward 
+            observable_state = simulator.get_observable_state(state) 
+            observation = step_observation
+    
+        print(control,total_reward)
             
     
 def main(file = '../examples/rockSample-7_8.pomdpx', 
-         control = 'Random', 
-         training_period = 10,
+         control = 'DQN', 
+         training_period = 50,
          testing_period = 1): 
     simulator = Simulator(file)
     simulator.print_model_information()
-    #initial_state = simulator.initial_state
-    #state_key_list = simulator.state_key_list
-    #total_reward = 0
-    
-    #obs = initial_state  # initial state = observation 
     
     control_method(simulator,control,training_period)
     

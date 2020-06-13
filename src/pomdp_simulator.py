@@ -48,6 +48,7 @@ class Simulator():
         self.initial_state <class 'dict'> e.g. {'robot_0': 's03', 'rock0_0': 'bad'}
         self.observation <class 'dict'> # note this is the O(o|s',a) function. Key is the observation name 
         self.observation_names <class 'dict'> # observation names. e.g. {'obs_sensor': ['ogood', 'obad']}
+        self.observation_key_list <class 'list'> list of observation keys 
         """
         
         
@@ -316,5 +317,8 @@ class Simulator():
     def vector_to_action(self): 
         pass 
     
+    
+    #def reset_simulator(self):
+     #   pass  
     
 

@@ -57,13 +57,16 @@ class DQN:
         model   = Sequential()
         #state_shape  = self.env.observation_space.shape
         state_shape = self.state_matrix.shape # need to define by the simulator 
-        action_shape = self.action_vector.shape 
+        #action_shape = self.action_vector.shape 
+        
+        
+        print('???????????',state_shape[0])
         
         model.add(Dense(24, input_dim=state_shape[0], 
             activation="relu"))
         model.add(Dense(48, activation="relu"))
         model.add(Dense(24, activation="relu"))
-        model.add(Dense(action_shape[0]))
+        model.add(Dense(len(self.action_vector)))
         model.compile(loss="mean_squared_error",
             optimizer=Adam(lr=self.learning_rate))
         return model 
@@ -102,10 +105,25 @@ class DQN:
     def act(self, state):
         # Note: need to modify this one for the pomdpx environment details 
         
+        # state here is going to be the numpy obs-state that generated in main 
+        
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
         if np.random.random() < self.epsilon: #  
-            return self.env.action_space.sample() ## 
+            print('something happened')
+            print(self.epsilon)
+            return self.action_vector.index(random.choice(self.action_vector)) ## modified 
+        print('something else happened')
+        
+        print('state before choosing',state)
+        print(state.shape)
+        state = np.reshape(state,(1,state.shape[0]))
+        print(state)
+        print('---',state.shape)
+        """
+        Note: not entirely certain about this reshaping method, but enables the function to run 
+        """
+        
         return np.argmax(self.model.predict(state)[0]) ## 
     
     
