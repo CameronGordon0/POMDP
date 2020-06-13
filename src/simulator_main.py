@@ -144,7 +144,7 @@ def get_observation_space(simulator):
         length+= len(simulator.observation_names[key])
     
     observation_space = np.zeros((length,))
-    print(len(observation_space))
+    #print(len(observation_space))
     return observation_space 
 
 
@@ -156,8 +156,8 @@ def reset(simulator):
 
 def control_method(simulator, 
                    control="Random", 
-                   training_period = 10, 
-                   verbose=True, 
+                   training_period = 100, 
+                   verbose=False, 
                    history = False,
                    maxsteps = 100):
     
@@ -172,7 +172,7 @@ def control_method(simulator,
     
     #initial_belief = simulator.initial_belief 
 
-    total_reward = 0 
+    
     
     # define some objects for handling actions 
     action_keys = list(simulator.actions.keys())[0] 
@@ -191,8 +191,9 @@ def control_method(simulator,
         
     
     
-    for i in range(training_period):
-        print(i)
+    for it in range(training_period):
+        #print(i)
+        total_reward = 0 
         state, observable_state = reset(simulator)
         observation = {}
         for i in simulator.observation_key_list: 
@@ -201,7 +202,7 @@ def control_method(simulator,
         
         
         if verbose: 
-            print('a', i)
+            print('iteration', it)
         
         for j in range(maxsteps): 
             
@@ -214,17 +215,17 @@ def control_method(simulator,
                 action_index = int(input('What action to take:\n'+str(action_list)))
                 action_taken = simulator.actions[action_keys][action_index]
             if control == "DQN": 
-                print('DQN')
-                print('..........................')
+                #print('DQN')
+                #print('..........................')
     
     
                 
                 numpy_observation = numpy_conversion(simulator,observable_state,observation) 
                 
                 action_index= dqn.act(numpy_observation)
-                print('action_index_dqn',action_index)
+                #print('action_index_dqn',action_index)
                 action_taken = simulator.actions[action_keys][action_index]
-                print('look here Cameron', action_taken)
+                #print('look here Cameron', action_taken)
                 
             
                 #print('Action taken',action_taken)
@@ -236,18 +237,29 @@ def control_method(simulator,
                 print('State ', next_state,'\n Observation ',step_observation,'\n', step_reward,'\n')
             
             if control == "DQN": 
-                pass # train 
+                # train 
+                
+                cur_state = numpy_conversion(simulator,observable_state,observation)
+                obs_new_state = simulator.get_observable_state(next_state)
+                new_state = numpy_conversion(simulator,obs_new_state,step_observation)
+                done = False
+                if j >= maxsteps-1:
+                    done = True
+                dqn.remember(cur_state, action_index, step_reward, new_state, done)
+            
+                dqn.replay()
+                dqn.target_train()
             state = next_state
             total_reward += step_reward 
             observable_state = simulator.get_observable_state(state) 
             observation = step_observation
     
-        print(control,total_reward)
+        print('iteration',it,control,total_reward)
             
     
-def main(file = '../examples/rockSample-7_8.pomdpx', 
+def main(file = '../examples/Tiger.pomdpx', 
          control = 'DQN', 
-         training_period = 50,
+         training_period = 150,
          testing_period = 1): 
     simulator = Simulator(file)
     simulator.print_model_information()

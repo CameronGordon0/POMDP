@@ -39,9 +39,9 @@ class DQN:
         self.memory = deque(maxlen=2000) 
         self.gamma = 0.95 
         self.epsilon = 1.0 
-        self.epsilon_min = 0.01 
+        self.epsilon_min = 0.1
         self.epsilon_decay = 0.995
-        self.learning_rate = 0.01 
+        self.learning_rate = 0.04 
         self.tau = 0.05 
         
         self.state_matrix = state_matrix 
@@ -60,12 +60,12 @@ class DQN:
         #action_shape = self.action_vector.shape 
         
         
-        print('???????????',state_shape[0])
+        #print('???????????',state_shape[0])
         
-        model.add(Dense(24, input_dim=state_shape[0], 
+        model.add(Dense(100, input_dim=state_shape[0], 
             activation="relu"))
-        model.add(Dense(48, activation="relu"))
-        model.add(Dense(24, activation="relu"))
+        model.add(Dense(70, activation="relu"))
+        model.add(Dense(30, activation="relu"))
         model.add(Dense(len(self.action_vector)))
         model.compile(loss="mean_squared_error",
             optimizer=Adam(lr=self.learning_rate))
@@ -85,6 +85,9 @@ class DQN:
         samples = random.sample(self.memory, batch_size)
         for sample in samples:
             state, action, reward, new_state, done = sample
+            state = np.reshape(state,(1,state.shape[0])) # modified 
+            new_state = np.reshape(new_state,(1,new_state.shape[0]))# modified 
+            
             target = self.target_model.predict(state)
             if done:
                 target[0][action] = reward
@@ -110,16 +113,16 @@ class DQN:
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
         if np.random.random() < self.epsilon: #  
-            print('something happened')
-            print(self.epsilon)
+            #print('something happened')
+            #print(self.epsilon)
             return self.action_vector.index(random.choice(self.action_vector)) ## modified 
-        print('something else happened')
+        #print('something else happened')
         
-        print('state before choosing',state)
-        print(state.shape)
+        #print('state before choosing',state)
+        #print(state.shape)
         state = np.reshape(state,(1,state.shape[0]))
-        print(state)
-        print('---',state.shape)
+        #print(state)
+        #print('---',state.shape)
         """
         Note: not entirely certain about this reshaping method, but enables the function to run 
         """
