@@ -17,6 +17,15 @@ Design principle:
 Initial model: 
     - No prioritised experience replay, only simple experience replay 
 
+
+Note: 
+    - on Tiger the model appears to converge to the 'no history' action (i.e. 'listen' always) 
+    - on rockSample-3_1 converges to a score of 10 
+    - on rockSample-7_8 converges to a score of 10
+    -- think this may be due to it homing in on the terminal state & avoiding searching for other options 
+
+
+
 """
 
 
@@ -39,9 +48,9 @@ class DQN:
         self.memory = deque(maxlen=2000) 
         self.gamma = 0.95 
         self.epsilon = 1.0 
-        self.epsilon_min = 0.1
-        self.epsilon_decay = 0.995
-        self.learning_rate = 0.04 
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.99
+        self.learning_rate = 0.02
         self.tau = 0.05 
         
         self.state_matrix = state_matrix 
@@ -59,8 +68,6 @@ class DQN:
         state_shape = self.state_matrix.shape # need to define by the simulator 
         #action_shape = self.action_vector.shape 
         
-        
-        #print('???????????',state_shape[0])
         
         model.add(Dense(100, input_dim=state_shape[0], 
             activation="relu"))
@@ -86,7 +93,10 @@ class DQN:
         for sample in samples:
             state, action, reward, new_state, done = sample
             state = np.reshape(state,(1,state.shape[0])) # modified 
+            
+            
             new_state = np.reshape(new_state,(1,new_state.shape[0]))# modified 
+            
             
             target = self.target_model.predict(state)
             if done:
@@ -121,6 +131,7 @@ class DQN:
         #print('state before choosing',state)
         #print(state.shape)
         state = np.reshape(state,(1,state.shape[0]))
+        
         #print(state)
         #print('---',state.shape)
         """

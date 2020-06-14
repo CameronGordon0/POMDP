@@ -29,38 +29,18 @@ E.g. in rockSample the agent knows where it is & where the rocks are?
 
 """
 
-#from parser_main import Parser 
 import numpy as np 
-#from qlearning import QLearning
 from DQN_Class import DQN
 from pomdp_simulator import Simulator
 import random 
 
-#from collections import deque
-#from keras.models import Sequential
-#from keras.layers import Dense, LSTM 
-#from keras.optimizers import Adam
 
 # rockSample-3_1
 # Tiger 
 # rockSample-7_8
 
 
-def get_stateobservation_matrix(): 
-    """
-    
-    takes a dictionary representation of the state & observation 
-    
-    return a matrix representation of the current observable part of the state and the observation 
 
-
-    definitely apply this as a simulator function - no need to place it here 
-
-    """ 
-    
-    
-    
-    pass 
 
 def numpy_conversion(simulator, 
                      observed_current_state,
@@ -75,18 +55,12 @@ def numpy_conversion(simulator,
     """
     
     observation_space = get_observation_space(simulator)
-    #print('obs_space',observation_space)
     
     length = 0 
     
     for i in observed_current_state: 
-        # need to get the index out of the list 
         
         obj = observed_current_state[i]
-        
-        #print(obj)
-        
-        #print(simulator.state[i][0])
         
         index = simulator.state[i][0].index(obj)
         length += len(simulator.state[i][0]) 
@@ -98,17 +72,11 @@ def numpy_conversion(simulator,
         # need to get the index out of the list 
         obj = observation[i] 
         
-        #print(obj)
-        
-        #print(simulator.observation_names[i])
-        
         index = simulator.observation_names[i].index(obj)
         
         #print('test',length+index)
         observation_space[length+index]=1
     
-    #print(observation_space)
-    #print(len(observation_space))
     return observation_space 
 
 def get_observation_space(simulator): 
@@ -122,20 +90,14 @@ def get_observation_space(simulator):
     
     create a 1x vector one hot encoding 
 
-
     """
     
     state_key_list = simulator.state_key_list 
     observation_key_list = simulator.observation_key_list 
     
-    #print('...',simulator.observation_names)
-    
     #for key in simulator.state
     length = 0 
-    #observable_state ={} 
     for key in state_key_list: 
-        #print(key)
-        #print(simulator.state[key])
         if simulator.state[key][1]=='true': 
             #print(key)
             length+= len(simulator.state[key][0])
@@ -160,20 +122,9 @@ def control_method(simulator,
                    verbose=False, 
                    history = False,
                    maxsteps = 100):
-    
-    # get the initial state & observation information & establish the observation_space 
-    
-    
 
-        
-    #print('\\\\\\\ ',observation)
-    
     observation_space = get_observation_space(simulator)
-    
-    #initial_belief = simulator.initial_belief 
 
-    
-    
     # define some objects for handling actions 
     action_keys = list(simulator.actions.keys())[0] 
     action_list = simulator.actions[action_keys]
@@ -183,14 +134,6 @@ def control_method(simulator,
     dqn = DQN(action_list, observation_space)
     
     
-    
-    
-
-    
-    
-        
-    
-    
     for it in range(training_period):
         #print(i)
         total_reward = 0 
@@ -198,7 +141,6 @@ def control_method(simulator,
         observation = {}
         for i in simulator.observation_key_list: 
             observation[i] = random.choice(simulator.observation_names[i])
-        
         
         
         if verbose: 
@@ -215,20 +157,12 @@ def control_method(simulator,
                 action_index = int(input('What action to take:\n'+str(action_list)))
                 action_taken = simulator.actions[action_keys][action_index]
             if control == "DQN": 
-                #print('DQN')
-                #print('..........................')
     
-    
-                
                 numpy_observation = numpy_conversion(simulator,observable_state,observation) 
                 
                 action_index= dqn.act(numpy_observation)
-                #print('action_index_dqn',action_index)
                 action_taken = simulator.actions[action_keys][action_index]
-                #print('look here Cameron', action_taken)
                 
-            
-                #print('Action taken',action_taken)
             next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
             
             # need to do some conversion to this representation?? 
@@ -256,8 +190,7 @@ def control_method(simulator,
     
         print('iteration',it,control,total_reward)
             
-    
-def main(file = '../examples/Tiger.pomdpx', 
+def main(file = '../examples/Tag.pomdpx', 
          control = 'DQN', 
          training_period = 150,
          testing_period = 1): 

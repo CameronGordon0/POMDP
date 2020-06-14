@@ -21,23 +21,19 @@
 
 <Variable>
 	<StateVar vnamePrev="robot_0" vnameCurr="robot_1" fullyObs="true">
-		<ValueEnum> Srv4rh0 Srv4rh1 Srv4rh2 Srv4rh3 Srv4rh4 Srv4rh5 Srv4rh6 Srv4rh7 Srv4rh8 Srv4rh9 Srv3rh0 Srv3rh1 Srv3rh2 Srv3rh3 Srv3rh4 Srv3rh5 Srv3rh6 Srv3rh7 Srv3rh8 Srv3rh9 Srv2rh5 Srv2rh6 Srv2rh7 Srv1rh5 Srv1rh6 Srv1rh7 Srv0rh5 Srv0rh6 Srv0rh7
-		</ValueEnum>
+		<ValueEnum> Srv4rh0 Srv4rh1 Srv4rh2 Srv4rh3 Srv4rh4 Srv4rh5 Srv4rh6 Srv4rh7 Srv4rh8 Srv4rh9 Srv3rh0 Srv3rh1 Srv3rh2 Srv3rh3 Srv3rh4 Srv3rh5 Srv3rh6 Srv3rh7 Srv3rh8 Srv3rh9 Srv2rh5 Srv2rh6 Srv2rh7 Srv1rh5 Srv1rh6 Srv1rh7 Srv0rh5 Srv0rh6 Srv0rh7</ValueEnum>
 	</StateVar>
 
 	<StateVar vnamePrev="target_0" vnameCurr="target_1" fullyObs="false">
-		<ValueEnum> Ttv4th0 Ttv4th1 Ttv4th2 Ttv4th3 Ttv4th4 Ttv4th5 Ttv4th6 Ttv4th7 Ttv4th8 Ttv4th9 Ttv3th0 Ttv3th1 Ttv3th2 Ttv3th3 Ttv3th4 Ttv3th5 Ttv3th6 Ttv3th7 Ttv3th8 Ttv3th9 Ttv2th5 Ttv2th6 Ttv2th7 Ttv1th5 Ttv1th6 Ttv1th7 Ttv0th5 Ttv0th6 Ttv0th7 tagged
-		</ValueEnum>
+		<ValueEnum> Ttv4th0 Ttv4th1 Ttv4th2 Ttv4th3 Ttv4th4 Ttv4th5 Ttv4th6 Ttv4th7 Ttv4th8 Ttv4th9 Ttv3th0 Ttv3th1 Ttv3th2 Ttv3th3 Ttv3th4 Ttv3th5 Ttv3th6 Ttv3th7 Ttv3th8 Ttv3th9 Ttv2th5 Ttv2th6 Ttv2th7 Ttv1th5 Ttv1th6 Ttv1th7 Ttv0th5 Ttv0th6 Ttv0th7 tagged</ValueEnum>
 	</StateVar>
 
 	<ObsVar vname="obs_sensor">
-		<ValueEnum> Orv4rh0 Orv4rh1 Orv4rh2 Orv4rh3 Orv4rh4 Orv4rh5 Orv4rh6 Orv4rh7 Orv4rh8 Orv4rh9 Orv3rh0 Orv3rh1 Orv3rh2 Orv3rh3 Orv3rh4 Orv3rh5 Orv3rh6 Orv3rh7 Orv3rh8 Orv3rh9 Orv2rh5 Orv2rh6 Orv2rh7 Orv1rh5 Orv1rh6 Orv1rh7 Orv0rh5 Orv0rh6 Orv0rh7 yes
-		</ValueEnum>
+		<ValueEnum> Orv4rh0 Orv4rh1 Orv4rh2 Orv4rh3 Orv4rh4 Orv4rh5 Orv4rh6 Orv4rh7 Orv4rh8 Orv4rh9 Orv3rh0 Orv3rh1 Orv3rh2 Orv3rh3 Orv3rh4 Orv3rh5 Orv3rh6 Orv3rh7 Orv3rh8 Orv3rh9 Orv2rh5 Orv2rh6 Orv2rh7 Orv1rh5 Orv1rh6 Orv1rh7 Orv0rh5 Orv0rh6 Orv0rh7 yes</ValueEnum>
 	</ObsVar>
 
 	<ActionVar vname="action_robot">
-		<ValueEnum> North South East West Catch
-		</ValueEnum>
+		<ValueEnum> North South East West Catch</ValueEnum>
 	</ActionVar>
 
 	<RewardVar vname="reward_robot"/>
