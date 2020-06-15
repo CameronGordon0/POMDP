@@ -39,11 +39,15 @@ import numpy as np
 class DQN: 
     
     
-    def __init__(self,action_vector,state_matrix): 
+    def __init__(self,action_vector,state_matrix,history_len = 0): 
         # define the action & the state shape 
         
         # this will probably involve concatinating the fully-observed parts of the state 
         # & the other observations in a numpy array either here or in the main loop 
+        
+        
+        # need to include the history length 
+        # may have issues with how this is defined for the first few entries??
         
         self.memory = deque(maxlen=2000) 
         self.gamma = 0.95 
@@ -62,17 +66,19 @@ class DQN:
         
         self.target_model = self.create_model() 
         
-    def create_model(self):
+        
+    def create_model(self,L1=100,L2=70,L3=30):
+        # defined L1,L2,L3 as the neurons in a layer 
         model   = Sequential()
         #state_shape  = self.env.observation_space.shape
         state_shape = self.state_matrix.shape # need to define by the simulator 
         #action_shape = self.action_vector.shape 
         
         
-        model.add(Dense(100, input_dim=state_shape[0], 
+        model.add(Dense(L1, input_dim=state_shape[0], 
             activation="relu"))
-        model.add(Dense(70, activation="relu"))
-        model.add(Dense(30, activation="relu"))
+        model.add(Dense(L2, activation="relu"))
+        model.add(Dense(L3, activation="relu"))
         model.add(Dense(len(self.action_vector)))
         model.compile(loss="mean_squared_error",
             optimizer=Adam(lr=self.learning_rate))

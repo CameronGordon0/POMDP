@@ -33,6 +33,7 @@ import numpy as np
 from DQN_Class import DQN
 from pomdp_simulator import Simulator
 import random 
+import matplotlib.pyplot as plt 
 
 
 # rockSample-3_1
@@ -41,10 +42,32 @@ import random
 
 
 
+def history_queue(new_observation=None, old_history=None):
+    # take in a single observation & a current history 
+    # return the new history containing the new observation 
+    # acts as a queue for the numpy arrays (FIFO) 
+    
+    # note that the new_observation needs to have the same dimensions as the old history
+    
+    # see example: 
+        # old_history = np.zeros((5,1,3))
+        # old_history[-1] = np.ones((1,3))
+        # new_observation = 2*np.ones((1,1,3))
+        # new_hist = history_queue(new_observation,old_history)
+    
+    
+    new_history = old_history[1:] # copies the old history less the oldest observation 
+        
+    new_history = np.append(new_history,new_observation,axis=0) 
+    
+    return new_history  
+
+
 
 def numpy_conversion(simulator, 
                      observed_current_state,
-                     observation): 
+                     observation,
+                     history_len=1): 
     """
     Takes two dictionaries: 
         observed_current_state (fully-observed part of state) 
@@ -66,6 +89,7 @@ def numpy_conversion(simulator,
         length += len(simulator.state[i][0]) 
         
         observation_space[index] = 1
+        # suggested change observation_space[history_len-1][index]
         
         
     for i in observation: 
@@ -76,10 +100,13 @@ def numpy_conversion(simulator,
         
         #print('test',length+index)
         observation_space[length+index]=1
+        # suggested change observation_space[history_len-1][length + index]
     
     return observation_space 
 
-def get_observation_space(simulator): 
+def get_observation_space(simulator, 
+                          history = False, 
+                          history_len = 1): 
     """
     Best approach here may just be a flat structure 
     
@@ -89,6 +116,12 @@ def get_observation_space(simulator):
     adding through the length of the variables 
     
     create a 1x vector one hot encoding 
+    
+    
+    can probably extend this to a hx history, where the history becomes a queue of the recent frames 
+    (with zeros for the first few frames) 
+    
+    will require changes to how the inputs are handled for the other components in main / DQN_Class 
 
     """
     
@@ -105,7 +138,15 @@ def get_observation_space(simulator):
     for key in observation_key_list: 
         length+= len(simulator.observation_names[key])
     
-    observation_space = np.zeros((length,))
+    if history: 
+        observation_space = np.zeros((history_len,length,))
+    else: 
+        observation_space = np.zeros((length,)) 
+        
+    # option here is to use a history check to allow running for historyless & specified history 
+    # may allow more easier checks in development rather than everything needing to be implemented at once (and breaking things) 
+    
+    #observation_space = np.zeros((history_len,length,)) suggested change 
     #print(len(observation_space))
     return observation_space 
 
@@ -121,9 +162,10 @@ def control_method(simulator,
                    training_period = 100, 
                    verbose=False, 
                    history = False,
-                   maxsteps = 100):
-
-    observation_space = get_observation_space(simulator)
+                   history_len = 1, 
+                   maxsteps = 25):
+    
+    observation_space = get_observation_space(simulator) #needs to contain history as well 
 
     # define some objects for handling actions 
     action_keys = list(simulator.actions.keys())[0] 
@@ -131,16 +173,24 @@ def control_method(simulator,
     action_n = len(action_list)
     action_space = np.zeros(action_n) 
     
-    dqn = DQN(action_list, observation_space)
     
+    
+    dqn = DQN(action_list, observation_space) 
+    # need to check how this is handled in the DQN (history) 
+    
+    
+    results_y = [] 
+    results_x = np.arange(0,training_period)
     
     for it in range(training_period):
         #print(i)
         total_reward = 0 
-        state, observable_state = reset(simulator)
+        state, observable_state = reset(simulator) 
         observation = {}
         for i in simulator.observation_key_list: 
             observation[i] = random.choice(simulator.observation_names[i])
+            
+        iteration_history = get_observation_space(simulator) # define within the observable_space function, as this is passed to the DQN file  
         
         
         if verbose: 
@@ -157,10 +207,16 @@ def control_method(simulator,
                 action_index = int(input('What action to take:\n'+str(action_list)))
                 action_taken = simulator.actions[action_keys][action_index]
             if control == "DQN": 
-    
+                
+                # history stack needs to be specified here 
                 numpy_observation = numpy_conversion(simulator,observable_state,observation) 
+                # need to make sure the numpy_observation is the same dim (along the axis) as the history matrix 
+                # want to do this within the numpy_observation 
+                
+                #history_queue = history_queue(new_observation=numpy_observation,old_history=)
                 
                 action_index= dqn.act(numpy_observation)
+                # need to make modifications in the dqn file to handle the extra index 
                 action_taken = simulator.actions[action_keys][action_index]
                 
             next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
@@ -173,31 +229,68 @@ def control_method(simulator,
             if control == "DQN": 
                 # train 
                 
+                # history stack needs to be specified here. Add new observation, remove the old one 
+                
                 cur_state = numpy_conversion(simulator,observable_state,observation)
                 obs_new_state = simulator.get_observable_state(next_state)
                 new_state = numpy_conversion(simulator,obs_new_state,step_observation)
+                # because this refers to new state not next state (data_type difference) 
+                
                 done = False
                 if j >= maxsteps-1:
                     done = True
-                dqn.remember(cur_state, action_index, step_reward, new_state, done)
+                    
+                dqn.remember(cur_state, action_index, step_reward, new_state, done) 
+                # need to see how this is handled by the dqn file 
+                
+                # may need to do some thinking on how the stack is remembered 
             
                 dqn.replay()
                 dqn.target_train()
             state = next_state
             total_reward += step_reward 
             observable_state = simulator.get_observable_state(state) 
-            observation = step_observation
+            # ideally want to leave this as same as current implementation 
+            # think this is fine, as the call really only depends on next_state (which is a dictionary) 
+            # although need to keep a running history at some point in the algorithm 
+            # may want to set this up initially and then keep it separate from the immediate state (which is passed to the simulator) 
+            observation = step_observation 
+            # need to handle history stack here 
     
         print('iteration',it,control,total_reward)
+        results_y.append(total_reward)
+    results_y = np.asarray(results_y)
+    
+    details = {}
+    details['model'] = control 
+    # details could be a useful dictionary for storing the key parameters for plotting
+    # (e.g. the model type, the key parameters)
+    # should also include the problem in the details (pull from parser)
+    
+    
+    return results_x, results_y, control
+
+def plot_results(x,y,details): 
+    fig = plt.figure()
+    plt.plot(x,y)
+    plt.title(details)
+    plt.xlabel('Epoch')
+    plt.ylabel('Score')
+    plt.show()
+
+    #plot(x,y)
+    
             
-def main(file = '../examples/Tag.pomdpx', 
+def main(file = '../examples/Tiger.pomdpx', 
          control = 'DQN', 
-         training_period = 150,
+         training_period = 10,
          testing_period = 1): 
     simulator = Simulator(file)
     simulator.print_model_information()
     
-    control_method(simulator,control,training_period)
+    x,y,details = control_method(simulator,control,training_period)
+    
+    plot_results(x,y,details)
     
     
 if __name__ == '__main__': 
