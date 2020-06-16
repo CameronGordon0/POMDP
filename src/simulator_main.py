@@ -191,14 +191,27 @@ def control_method(simulator,
     results_y = [] 
     results_x = np.arange(0,training_period)
     
+    """
+    Note this initialises outside of the observation (i.e. same starting obs for each iteration)
+    """
+    
+    observation = {}
+    for i in simulator.observation_key_list: 
+        observation[i] = random.choice(simulator.observation_names[i])
+    
     for it in range(training_period):
+        dqn.epsilon *= dqn.epsilon_decay
         #print(i)
         total_reward = 0 
         state, observable_state = reset(simulator) 
+        
+        """
+        Note: including it in this loop reinitialises the problem for each iteration 
+        It's a better testing method, but worth examining on the same initial condition too'
         observation = {}
         for i in simulator.observation_key_list: 
             observation[i] = random.choice(simulator.observation_names[i])
-            
+        """
         if history:
             iteration_history = get_observation_space(simulator,history=True,history_len=history_len)
             # define within the observable_space function, as this is passed to the DQN file  
@@ -207,6 +220,8 @@ def control_method(simulator,
             print('iteration', it)
         
         for j in range(maxsteps): 
+            if total_reward > 11: 
+                print('interesting!!!')
             
             if verbose:
                 print('step',j+1)
@@ -235,6 +250,8 @@ def control_method(simulator,
                 
             next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
             
+            if step_reward >9: 
+                print('look', total_reward)
             # need to do some conversion to this representation?? 
             if verbose: 
                 print('Action taken',action_taken)
@@ -262,7 +279,7 @@ def control_method(simulator,
                     pass 
                 
                 done = False
-                if j >= maxsteps-1:
+                if j >= maxsteps-1: # may want to hard-code a check for terminal state 
                     done = True
                     
                 dqn.remember(cur_state, action_index, step_reward, new_state, done) 
@@ -282,7 +299,7 @@ def control_method(simulator,
             observation = step_observation 
             # need to handle history stack here 
     
-        print('iteration',it,control,total_reward)
+        print('iteration',it,control,total_reward,'epsilon',dqn.epsilon)
         results_y.append(total_reward)
     results_y = np.asarray(results_y)
     
@@ -292,7 +309,7 @@ def control_method(simulator,
     # (e.g. the model type, the key parameters)
     # should also include the problem in the details (pull from parser)
     
-    
+    print('ran to here')
     return results_x, results_y, control
 
 def plot_results(x,y,details): 
@@ -306,7 +323,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/Tiger.pomdpx', 
+def main(file = '../examples/rockSample-3_1.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -386,7 +403,7 @@ def unit_test_1():
 if __name__ == '__main__': 
     main(history=True,
          verbose=False,
-         training_period=50,
-         history_len=7)
+         training_period=300,
+         history_len=10)
     #unit_test_1()
     

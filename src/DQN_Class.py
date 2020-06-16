@@ -54,7 +54,7 @@ class DQN:
         # may have issues with how this is defined for the first few entries??
         
         self.memory = deque(maxlen=2000) 
-        self.gamma = 0.95 
+        self.gamma = 0.99 
         self.epsilon = 1.0 
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.99
@@ -109,7 +109,7 @@ class DQN:
     def replay(self):
         # note: need to modify this for PER (extract the TD-Error & sort the memory)
         
-        batch_size = 5 # batch size reduced to force earlier use of memory 
+        batch_size = 32 # batch size reduced to force earlier use of memory 
         if len(self.memory) < batch_size: 
             return
         samples = random.sample(self.memory, batch_size)
@@ -153,8 +153,12 @@ class DQN:
         
         # state here is going to be the numpy obs-state that generated in main 
         
-        self.epsilon *= self.epsilon_decay
+        #self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
+        
+        # I think this is a key, key issue. 
+        # definitely anneals way too fast
+        #print(self.epsilon)
         
         
         
