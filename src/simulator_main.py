@@ -291,7 +291,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/Tiger.pomdpx', 
+def main(file = '../examples/rockSample-3_1.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,

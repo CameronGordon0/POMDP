@@ -109,16 +109,26 @@ class DQN:
     def replay(self):
         # note: need to modify this for PER (extract the TD-Error & sort the memory)
         
-        batch_size = 5
+        batch_size = 5 # batch size reduced to force earlier use of memory 
         if len(self.memory) < batch_size: 
             return
         samples = random.sample(self.memory, batch_size)
         for sample in samples:
             state, action, reward, new_state, done = sample
-            state = np.reshape(state,(1,state.shape[0])) # modified 
             
+            # modified 
+
+            if self.history: 
+                state = np.reshape(state,(-1,int(state.shape[0]),state.shape[1]))
+            else:
+                state = np.reshape(state,(1,state.shape[0]))
             
-            new_state = np.reshape(new_state,(1,new_state.shape[0]))# modified 
+            #new_state = np.reshape(new_state,(1,new_state.shape[0]))# modified 
+            
+            if self.history: 
+                new_state = np.reshape(new_state,(-1,int(new_state.shape[0]),new_state.shape[1]))
+            else:
+                new_state = np.reshape(new_state,(1,new_state.shape[0]))
             
             
             target = self.target_model.predict(state)
