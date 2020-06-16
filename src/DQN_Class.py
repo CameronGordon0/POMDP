@@ -31,7 +31,7 @@ Note:
 
 from collections import deque 
 from keras.models import Sequential
-from keras.layers import Dense 
+from keras.layers import Dense, Flatten 
 from keras.optimizers import Adam 
 import random 
 import numpy as np 
@@ -39,7 +39,11 @@ import numpy as np
 class DQN: 
     
     
-    def __init__(self,action_vector,state_matrix,history_len = 0): 
+    def __init__(self,
+                 action_vector,
+                 state_matrix,
+                 history = False,
+                 history_len = 0): 
         # define the action & the state shape 
         
         # this will probably involve concatinating the fully-observed parts of the state 
@@ -60,6 +64,7 @@ class DQN:
         self.state_matrix = state_matrix 
         self.action_vector = action_vector
         
+        self.history = history
         
         
         self.model = self.create_model()
@@ -67,24 +72,36 @@ class DQN:
         self.target_model = self.create_model() 
         
         
-    def create_model(self,L1=100,L2=70,L3=30):
+    def create_model(self,
+                     L1=100,
+                     L2=70,
+                     L3=30):
         # defined L1,L2,L3 as the neurons in a layer 
         model   = Sequential()
         #state_shape  = self.env.observation_space.shape
         state_shape = self.state_matrix.shape # need to define by the simulator 
         #action_shape = self.action_vector.shape 
+        print('DQN state shape',state_shape)
         
-        
-        model.add(Dense(L1, input_dim=state_shape[0], 
+        model.add(Dense(L1, input_shape=state_shape, 
             activation="relu"))
         model.add(Dense(L2, activation="relu"))
         model.add(Dense(L3, activation="relu"))
+        
+        if self.history == True: 
+            model.add(Flatten())
+        
         model.add(Dense(len(self.action_vector)))
         model.compile(loss="mean_squared_error",
             optimizer=Adam(lr=self.learning_rate))
         return model 
     
-    def remember(self, state, action, reward, new_state, done):
+    def remember(self, 
+                 state, 
+                 action, 
+                 reward, 
+                 new_state, 
+                 done):
         # note: to convert this to prioritised experience replay, 
         # need to store the TD-Error in this tuple 
         self.memory.append([state, action, reward, new_state, done]) 
@@ -92,7 +109,7 @@ class DQN:
     def replay(self):
         # note: need to modify this for PER (extract the TD-Error & sort the memory)
         
-        batch_size = 32
+        batch_size = 5
         if len(self.memory) < batch_size: 
             return
         samples = random.sample(self.memory, batch_size)
@@ -128,6 +145,9 @@ class DQN:
         
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
+        
+        
+        
         if np.random.random() < self.epsilon: #  
             #print('something happened')
             #print(self.epsilon)
@@ -136,7 +156,11 @@ class DQN:
         
         #print('state before choosing',state)
         #print(state.shape)
-        state = np.reshape(state,(1,state.shape[0]))
+        
+        if self.history: 
+            state = np.reshape(state,(-1,int(state.shape[0]),state.shape[1]))
+        else:
+            state = np.reshape(state,(1,state.shape[0]))
         
         #print(state)
         #print('---',state.shape)

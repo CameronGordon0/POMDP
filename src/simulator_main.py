@@ -67,6 +67,8 @@ def history_queue(new_observation=None, old_history=None):
 def numpy_conversion(simulator, 
                      observed_current_state,
                      observation,
+                     history = False, # can probably leave most of the logic for the history out of this one ?
+                     # trick may be to reshape the vector in the main loop rather than messing around with something here 
                      history_len=1): 
     """
     Takes two dictionaries: 
@@ -101,6 +103,9 @@ def numpy_conversion(simulator,
         #print('test',length+index)
         observation_space[length+index]=1
         # suggested change observation_space[history_len-1][length + index]
+    
+    if history == True: 
+        observation_space = np.reshape(observation_space,(1,int(observation_space.shape[0])))
     
     return observation_space 
 
@@ -151,7 +156,9 @@ def get_observation_space(simulator,
     return observation_space 
 
 
-def reset(simulator): 
+def reset(simulator,
+          history=False,
+          history_len=1): 
     state = simulator.initial_state 
     observable_state = simulator.get_observable_state(state)
     return state, observable_state
@@ -236,6 +243,9 @@ def control_method(simulator,
                 new_state = numpy_conversion(simulator,obs_new_state,step_observation)
                 # because this refers to new state not next state (data_type difference) 
                 
+                if history == True: 
+                    pass # need to handle the history 
+                
                 done = False
                 if j >= maxsteps-1:
                     done = True
@@ -283,8 +293,11 @@ def plot_results(x,y,details):
             
 def main(file = '../examples/Tiger.pomdpx', 
          control = 'DQN', 
-         training_period = 10,
-         testing_period = 1): 
+         training_period = 30,
+         testing_period = 1,
+         verbose = False,
+         history = False,
+         history_len = 0): 
     simulator = Simulator(file)
     simulator.print_model_information()
     
@@ -293,6 +306,69 @@ def main(file = '../examples/Tiger.pomdpx',
     plot_results(x,y,details)
     
     
+def unit_test_1(): 
+    # testing history componets in control_method 
+    file = '../examples/rockSample-3_1.pomdpx'
+    #file = '../examples/rockSample-7_8.pomdpx'
+    #file = '../examples/Tiger.pomdpx'
+    simulator = Simulator(file)
+    obs_space = get_observation_space(simulator,history=True,history_len=10)
+    print('obs_test',obs_space)
+    action_keys = list(simulator.actions.keys())[0] 
+    action_list = simulator.actions[action_keys]
+    
+    dqn = DQN(action_list, obs_space,history=True) 
+    print('DQN',dqn)
+    
+    state, observable_state = reset(simulator,history=True,history_len=10)
+    print('state',state)
+    print('observable state', observable_state)
+    
+    observation = {}
+    for i in simulator.observation_key_list: 
+        observation[i] = random.choice(simulator.observation_names[i])
+        
+    iteration_history = get_observation_space(simulator,history=True,history_len=10)
+    
+    print('observation',observation)
+    print('iteration_history', iteration_history) 
+    
+    numpy_observation = numpy_conversion(simulator,observable_state,observation, history=True)
+    # print('numpy_observation',numpy_observation)
+    # print(numpy_observation.shape)
+    # x, y = int(numpy_observation.shape[0]),int(numpy_observation[1])
+    # numpy_observation = np.reshape(numpy_observation,(1,x))
+    print(numpy_observation.shape)
+    print(iteration_history.shape)
+    
+    
+    iteration_history = history_queue(numpy_observation, iteration_history)
+    
+    print('iteration_history',iteration_history) 
+    
+    action_index = dqn.act(iteration_history)
+    
+    print(action_index)
+    
+    iteration_history = np.reshape(iteration_history,
+                                   (-1,int(iteration_history.shape[0]),int(iteration_history.shape[1])))
+    
+    print(iteration_history.shape)
+    print(dqn.model.predict(iteration_history)[0])
+    
+    
+    test = np.argmax(dqn.model.predict(iteration_history)[0])
+    
+    print('test',test)
+    
+    #dqn.
+    
+    
+    
+    
+    
+    
 if __name__ == '__main__': 
-    main()
+    #main()
+    unit_test_1()
     
