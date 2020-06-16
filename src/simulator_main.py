@@ -170,9 +170,11 @@ def control_method(simulator,
                    verbose=False, 
                    history = False,
                    history_len = 1, 
-                   maxsteps = 25):
-    
-    observation_space = get_observation_space(simulator) #needs to contain history as well 
+                   maxsteps = 40):
+    if history: 
+        observation_space = get_observation_space(simulator,history=True,history_len=history_len) 
+    else:
+        observation_space = get_observation_space(simulator) #needs to contain history as well 
 
     # define some objects for handling actions 
     action_keys = list(simulator.actions.keys())[0] 
@@ -182,7 +184,7 @@ def control_method(simulator,
     
     
     
-    dqn = DQN(action_list, observation_space) 
+    dqn = DQN(action_list, observation_space,history=history) 
     # need to check how this is handled in the DQN (history) 
     
     
@@ -197,8 +199,9 @@ def control_method(simulator,
         for i in simulator.observation_key_list: 
             observation[i] = random.choice(simulator.observation_names[i])
             
-        iteration_history = get_observation_space(simulator) # define within the observable_space function, as this is passed to the DQN file  
-        
+        if history:
+            iteration_history = get_observation_space(simulator,history=True,history_len=history_len)
+            # define within the observable_space function, as this is passed to the DQN file  
         
         if verbose: 
             print('iteration', it)
@@ -216,13 +219,17 @@ def control_method(simulator,
             if control == "DQN": 
                 
                 # history stack needs to be specified here 
-                numpy_observation = numpy_conversion(simulator,observable_state,observation) 
+                numpy_observation = numpy_conversion(simulator,observable_state,observation,history=history) 
                 # need to make sure the numpy_observation is the same dim (along the axis) as the history matrix 
                 # want to do this within the numpy_observation 
                 
                 #history_queue = history_queue(new_observation=numpy_observation,old_history=)
-                
-                action_index= dqn.act(numpy_observation)
+                if history: 
+                    iteration_history = history_queue(numpy_observation,iteration_history)
+                    action_index = dqn.act(iteration_history)
+                    #print('test',iteration_history)
+                else:
+                    action_index= dqn.act(numpy_observation)
                 # need to make modifications in the dqn file to handle the extra index 
                 action_taken = simulator.actions[action_keys][action_index]
                 
@@ -238,13 +245,21 @@ def control_method(simulator,
                 
                 # history stack needs to be specified here. Add new observation, remove the old one 
                 
-                cur_state = numpy_conversion(simulator,observable_state,observation)
+                cur_state = numpy_conversion(simulator,observable_state,observation,history=history)
                 obs_new_state = simulator.get_observable_state(next_state)
-                new_state = numpy_conversion(simulator,obs_new_state,step_observation)
+                new_state = numpy_conversion(simulator,obs_new_state,step_observation,history=history)
                 # because this refers to new state not next state (data_type difference) 
                 
                 if history == True: 
-                    pass # need to handle the history 
+                    cur_state = iteration_history
+                    new_state = history_queue(new_state, iteration_history)
+                     # need to handle the history 
+                    # handle this mainly through the history queue function 
+                    # it will have a separate history for the cur_state 
+                    # and the new_state 
+                    
+                else:
+                    pass 
                 
                 done = False
                 if j >= maxsteps-1:
@@ -291,7 +306,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/rockSample-3_1.pomdpx', 
+def main(file = '../examples/Tiger.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -301,7 +316,7 @@ def main(file = '../examples/rockSample-3_1.pomdpx',
     simulator = Simulator(file)
     simulator.print_model_information()
     
-    x,y,details = control_method(simulator,control,training_period)
+    x,y,details = control_method(simulator,control,training_period,verbose=verbose,history=history,history_len=history_len)
     
     plot_results(x,y,details)
     
@@ -369,6 +384,9 @@ def unit_test_1():
     
     
 if __name__ == '__main__': 
-    #main()
-    unit_test_1()
+    main(history=True,
+         verbose=False,
+         training_period=50,
+         history_len=7)
+    #unit_test_1()
     

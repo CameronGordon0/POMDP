@@ -177,6 +177,7 @@ class DQN:
         """
         Note: not entirely certain about this reshaping method, but enables the function to run 
         """
+        #print('act check',state)
         
         return np.argmax(self.model.predict(state)[0]) ## 
     
