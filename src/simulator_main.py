@@ -34,6 +34,7 @@ from DQN_Class import DQN
 from pomdp_simulator import Simulator
 import random 
 import matplotlib.pyplot as plt 
+#import math
 
 
 # rockSample-3_1
@@ -193,11 +194,17 @@ def control_method(simulator,
     
     """
     Note this initialises outside of the observation (i.e. same starting obs for each iteration)
-    """
+    
     
     observation = {}
     for i in simulator.observation_key_list: 
         observation[i] = random.choice(simulator.observation_names[i])
+    """
+    
+    # annealling strategy: decay to 0.01 by half of the training epochs 
+    
+    dqn.epsilon_decay = np.exp((np.log(0.01))/(0.5*training_period))
+    
     
     for it in range(training_period):
         dqn.epsilon *= dqn.epsilon_decay
@@ -208,10 +215,11 @@ def control_method(simulator,
         """
         Note: including it in this loop reinitialises the problem for each iteration 
         It's a better testing method, but worth examining on the same initial condition too'
+        """
         observation = {}
         for i in simulator.observation_key_list: 
             observation[i] = random.choice(simulator.observation_names[i])
-        """
+        
         if history:
             iteration_history = get_observation_space(simulator,history=True,history_len=history_len)
             # define within the observable_space function, as this is passed to the DQN file  
@@ -220,8 +228,8 @@ def control_method(simulator,
             print('iteration', it)
         
         for j in range(maxsteps): 
-            if total_reward > 11: 
-                print('interesting!!!')
+            #if total_reward > 11: 
+             #   print('interesting!!!')
             
             if verbose:
                 print('step',j+1)
@@ -323,17 +331,18 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/rockSample-3_1.pomdpx', 
+def main(file = '../examples/rockSample-7_8.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
          verbose = False,
          history = False,
-         history_len = 0): 
+         history_len = 4,
+         maxsteps=50): 
     simulator = Simulator(file)
     simulator.print_model_information()
     
-    x,y,details = control_method(simulator,control,training_period,verbose=verbose,history=history,history_len=history_len)
+    x,y,details = control_method(simulator,control,training_period,verbose=verbose,history=history,history_len=history_len,maxsteps=maxsteps)
     
     plot_results(x,y,details)
     
