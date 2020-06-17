@@ -43,6 +43,7 @@ import matplotlib.pyplot as plt
 
 
 
+
 def history_queue(new_observation=None, old_history=None):
     # take in a single observation & a current history 
     # return the new history containing the new observation 
@@ -208,6 +209,9 @@ def control_method(simulator,
     
     for it in range(training_period):
         dqn.epsilon *= dqn.epsilon_decay
+        
+        if it % 50 == 5: 
+            dqn.epsilon+=0.01 # testing this out - want to induce more long-term exploration while still letting it run good policies 
         #print(i)
         total_reward = 0 
         state, observable_state = reset(simulator) 
@@ -226,6 +230,8 @@ def control_method(simulator,
         
         if verbose: 
             print('iteration', it)
+        
+        done = False
         
         for j in range(maxsteps): 
             #if total_reward > 11: 
@@ -286,17 +292,27 @@ def control_method(simulator,
                 else:
                     pass 
                 
-                done = False
+                
                 if j >= maxsteps-1: # may want to hard-code a check for terminal state 
                     done = True
+                    
+                # note this is obviously a hard-coding for the terminal state (not pomdpx generic)
+                if 'robot_0' in simulator.state_key_list:
+                    if state['robot_0']=='st':
+                        done = True 
                     
                 dqn.remember(cur_state, action_index, step_reward, new_state, done) 
                 # need to see how this is handled by the dqn file 
                 
                 # may need to do some thinking on how the stack is remembered 
-            
+                """
+                This is the placement of the replay and train in the original model. 
+                There were some comments that it should be in the outer loop (e.g. after each iteration, not step). 
+                I agree, so testing it outside. 
                 dqn.replay()
                 dqn.target_train()
+                """
+                
             state = next_state
             total_reward += step_reward 
             observable_state = simulator.get_observable_state(state) 
@@ -306,6 +322,12 @@ def control_method(simulator,
             # may want to set this up initially and then keep it separate from the immediate state (which is passed to the simulator) 
             observation = step_observation 
             # need to handle history stack here 
+            if done == True: 
+                break
+            
+        dqn.replay() # note: not the original placement (original in the step loop)
+        dqn.target_train()
+        # result of training is a much faster iteration 
     
         print('iteration',it,control,total_reward,'epsilon',dqn.epsilon)
         results_y.append(total_reward)
@@ -331,7 +353,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/rockSample-7_8.pomdpx', 
+def main(file = '../examples/Tiger.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -412,7 +434,8 @@ def unit_test_1():
 if __name__ == '__main__': 
     main(history=True,
          verbose=False,
-         training_period=300,
-         history_len=10)
+         training_period=500,
+         history_len=30,
+         maxsteps = 30)
     #unit_test_1()
     

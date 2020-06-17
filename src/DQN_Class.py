@@ -31,10 +31,19 @@ Note:
 
 from collections import deque 
 from keras.models import Sequential
-from keras.layers import Dense, Flatten 
+from keras.layers import Dense, Flatten, LSTM, Dropout, Conv2D, MaxPooling2D  
 from keras.optimizers import Adam 
 import random 
 import numpy as np 
+
+
+USE_GPU = False 
+
+"""
+Note: https://towardsdatascience.com/deep-learning-using-gpu-on-your-macbook-c9becba7c43 
+
+Gives details of using GPU & Keras using PlaidML library. Supposed to give speed-up. 
+"""
 
 class DQN: 
     
@@ -43,7 +52,10 @@ class DQN:
                  action_vector,
                  state_matrix,
                  history = False,
-                 history_len = 0): 
+                 history_len = 0,
+                 DRQN = False,
+                 Dropout = False,
+                 Conv = False): 
         # define the action & the state shape 
         
         # this will probably involve concatinating the fully-observed parts of the state 
@@ -65,7 +77,9 @@ class DQN:
         self.action_vector = action_vector
         
         self.history = history
-        
+        self.DRQN = DRQN
+        self.Dropout=Dropout
+        self.Conv = Conv
         
         self.model = self.create_model()
         
@@ -73,23 +87,38 @@ class DQN:
         
         
     def create_model(self,
-                     L1=100,
-                     L2=70,
+                     L1=30,
+                     L2=30,
                      L3=30):
         # defined L1,L2,L3 as the neurons in a layer 
         model   = Sequential()
         #state_shape  = self.env.observation_space.shape
         state_shape = self.state_matrix.shape # need to define by the simulator 
+        print('state',state_shape)
         #action_shape = self.action_vector.shape 
         print('DQN state shape',state_shape)
         
-        model.add(Dense(L1, input_shape=state_shape, 
+        if self.Conv: 
+            state_shape = (state_shape[0],state_shape[1],1)
+            model.add(Conv2D(filters=64,kernel_size = 2,input_shape=state_shape,activation="relu"))
+            #model.add(MaxPooling2D(pool_size=2))
+            #model.add(Conv2D(filters=32,kernel_size = 2,activation="relu"))
+            #model.add(MaxPooling2D(pool_size=2))
+            #model.add(Conv2D(filters=16,kernel_size = 2,activation="relu"))
+            #model.add(MaxPooling2D(pool_size=2))
+        else:
+            model.add(Dense(L1, input_shape=state_shape, 
             activation="relu"))
         model.add(Dense(L2, activation="relu"))
+        if self.Dropout: 
+            model.add(Dropout(0.4))
         model.add(Dense(L3, activation="relu"))
         
-        if self.history == True: 
+        if self.history == True and not self.DRQN: # this one's interesting - it doesn't like Flatten & LSTM together for dimension reasons 
             model.add(Flatten())
+            
+        if self.DRQN: 
+            model.add(LSTM(100))
         
         model.add(Dense(len(self.action_vector)))
         model.compile(loss="mean_squared_error",
@@ -119,26 +148,37 @@ class DQN:
             # modified 
 
             if self.history: 
-                state = np.reshape(state,(-1,int(state.shape[0]),state.shape[1]))
+                if self.Conv: 
+                    #print('here')
+                    state = np.reshape(state,(1,int(state.shape[0]),int(state.shape[1]),1))
+                else:
+                    state = np.reshape(state,(-1,int(state.shape[0]),state.shape[1]))
             else:
                 state = np.reshape(state,(1,state.shape[0]))
             
             #new_state = np.reshape(new_state,(1,new_state.shape[0]))# modified 
             
             if self.history: 
-                new_state = np.reshape(new_state,(-1,int(new_state.shape[0]),new_state.shape[1]))
+                if self.Conv: 
+                    new_state = np.reshape(new_state,(1,int(new_state.shape[0]),int(new_state.shape[1]),1))
+                    #print('ere')
+                else:
+                    new_state = np.reshape(new_state,(-1,int(new_state.shape[0]),new_state.shape[1]))
             else:
                 new_state = np.reshape(new_state,(1,new_state.shape[0]))
             
             
-            target = self.target_model.predict(state)
+            target = self.target_model.predict(new_state) # should the target be this state or the next state?? 
             if done:
                 target[0][action] = reward
             else:
+                #print('check',new_state.shape)
                 Q_future = max(
                     self.target_model.predict(new_state)[0])
                 target[0][action] = reward + Q_future * self.gamma
             self.model.fit(state, target, epochs=1, verbose=0)
+            # note: original model here had epochs set as 1 
+            # do not see significant performance improvement (indeed may become overfit)
     
     def target_train(self):
         weights = self.model.get_weights()
@@ -172,7 +212,11 @@ class DQN:
         #print(state.shape)
         
         if self.history: 
-            state = np.reshape(state,(-1,int(state.shape[0]),state.shape[1]))
+            if self.Conv: 
+                state = np.reshape(state,(1,int(state.shape[0]),int(state.shape[1]),1))
+                #print('look here',state.shape)
+            else:
+                state = np.reshape(state,(-1,int(state.shape[0]),int(state.shape[1])))
         else:
             state = np.reshape(state,(1,state.shape[0]))
         
@@ -182,6 +226,8 @@ class DQN:
         Note: not entirely certain about this reshaping method, but enables the function to run 
         """
         #print('act check',state)
+        
+
         
         return np.argmax(self.model.predict(state)[0]) ## 
     
