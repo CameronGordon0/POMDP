@@ -353,7 +353,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/Tiger.pomdpx', 
+def main(file = '../examples/rockSample-3_1.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -435,7 +435,7 @@ if __name__ == '__main__':
     main(history=True,
          verbose=False,
          training_period=500,
-         history_len=30,
+         history_len=10,
          maxsteps = 30)
     #unit_test_1()
     
