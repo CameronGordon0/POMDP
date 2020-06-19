@@ -73,11 +73,11 @@ class DQN:
                  state_matrix,
                  history = True,
                  history_len = 0,
-                 DRQN = True,
+                 DRQN = False,
                  Dropout = False,
                  Conv = False, 
                  PriorityExperienceReplay=True,
-                 Deep=True): 
+                 Deep=False): 
         # define the action & the state shape 
         
         # this will probably involve concatinating the fully-observed parts of the state 
@@ -129,9 +129,9 @@ class DQN:
         
         
     def create_model(self,
-                     L1=100,
-                     L2=100,
-                     L3=100):
+                     L1=50,
+                     L2=30,
+                     L3=40):
         # defined L1,L2,L3 as the neurons in a layer 
         # each to try new architectures (e.g. autoencoding)
         
@@ -185,7 +185,20 @@ class DQN:
         return TD_Error 
     
     def calculate_priority(self,td_error):
-        return np.power(abs(td_error)+self.min_priority,self.alpha) 
+        
+        # attempting to skew it positive 
+        # original was return np.power(abs(td_error)+self.min_priority,self.alpha) for both 
+        
+        original_calc = True 
+        
+        if original_calc: 
+            return np.power(abs(td_error)+self.min_priority,self.alpha)
+        else:
+            if td_error > 0: 
+                return np.power(abs(td_error)*abs(td_error)+self.min_priority,self.alpha)
+                
+            else: 
+                return np.power(abs(td_error)/2+self.min_priority,self.alpha) 
     
     def calculate_sample_probability(self): 
         # returns a numpy array of the probability of sampling 

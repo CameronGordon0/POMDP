@@ -247,7 +247,7 @@ def control_method(simulator,
         
         
         if it % 100 == 5 and dqn.epsilon < 1: 
-            dqn.epsilon+=0.15 # testing this out - want to induce more long-term exploration while still letting it run good policies 
+            dqn.epsilon+=0.01 # testing this out - want to induce more long-term exploration while still letting it run good policies 
         #print(i)
         total_reward = 0 
         state, observable_state = reset(simulator) 
@@ -348,7 +348,7 @@ def control_method(simulator,
                 
                 if j >= maxsteps-1: # may want to hard-code a check for terminal state 
                     done = True
-                    print('took max steps')
+                    #print('took max steps')
                     
                 # note this is obviously a hard-coding for the terminal state (not pomdpx generic)
                 if 'robot_0' in simulator.state_key_list:
@@ -407,7 +407,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/rockSample-7_8.pomdpx', 
+def main(file = '../examples/rockSample-3_1.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -489,10 +489,11 @@ def unit_test_1():
     
     
 if __name__ == '__main__': 
-    main(history=True,
+    main(history=False,
          verbose=False,
-         training_period=300,
-         history_len=100,
-         maxsteps = 100)
+         training_period=1000,
+         history_len=50,
+         maxsteps = 50, 
+         include_actions=True)
     #unit_test_1()
     
