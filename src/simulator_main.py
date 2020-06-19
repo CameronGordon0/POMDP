@@ -205,10 +205,14 @@ def control_method(simulator,
     # annealling strategy: decay to 0.01 by half of the training epochs 
     
     dqn.epsilon_decay = np.exp((np.log(0.01))/(0.5*training_period))
+    dqn.training_delay = 0.1*training_period # putting in a training delay to force some random samples 
     
     
-    for it in range(training_period):
-        dqn.epsilon *= dqn.epsilon_decay
+    for it in range(training_period): 
+        if it > dqn.training_delay: 
+            dqn.epsilon *= dqn.epsilon_decay 
+        #dqn.current_iteration +=
+        
         
         if it % 50 == 5: 
             dqn.epsilon+=0.01 # testing this out - want to induce more long-term exploration while still letting it run good policies 
@@ -353,7 +357,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/rockSample-3_1.pomdpx', 
+def main(file = '../examples/Tiger.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -434,8 +438,8 @@ def unit_test_1():
 if __name__ == '__main__': 
     main(history=True,
          verbose=False,
-         training_period=500,
-         history_len=10,
-         maxsteps = 30)
+         training_period=150,
+         history_len=30,
+         maxsteps = 40)
     #unit_test_1()
     

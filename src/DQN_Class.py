@@ -37,7 +37,8 @@ Note:
     
     
     - annealling for Priority Experience Replay seems to be extremely important (just sampling the top TD errors heavily biases to optimism) 
-    
+    - implementation on Priority Experience Replay draws on https://adventuresinmachinelearning.com/prioritised-experience-replay/ 
+    - still need to anneal for importance sampling 
     
     
 
@@ -86,8 +87,10 @@ class DQN:
         # may have issues with how this is defined for the first few entries??
         
         self.memory = deque(maxlen=2000) 
+        #self.priority_array =
         #self.pq = queue.PriorityQueue(maxsize=2000)
         #print(self.pq)
+        
         
         self.gamma = 0.99 
         self.epsilon = 1.0 
@@ -110,11 +113,26 @@ class DQN:
         self.target_model = self.create_model() 
         
         
+        if self.PriorityExperienceReplay: 
+            # set a couple of the parameters required for importance sampling & prioritised experience replay 
+            self.alpha = 0.6 
+            self.beta = 0.5 # use this for calculating the importance sampling weight 
+            self.min_priority = 0.01 
+            #self.sample_probabilities = np.zeros(2000) # initialise a sample probability vector 
+            
+        self.training_delay = None 
+        self.current_iteration = 0 
+        
+        
+        
+        
     def create_model(self,
-                     L1=30,
+                     L1=50,
                      L2=30,
-                     L3=30):
+                     L3=50):
         # defined L1,L2,L3 as the neurons in a layer 
+        # each to try new architectures (e.g. autoencoding)
+        
         model   = Sequential()
         #state_shape  = self.env.observation_space.shape
         state_shape = self.state_matrix.shape # need to define by the simulator 
@@ -159,6 +177,39 @@ class DQN:
         #print(TD_Error)
         return TD_Error 
     
+    def calculate_priority(self,td_error):
+        return np.power(abs(td_error)+self.min_priority,self.alpha) 
+    
+    def calculate_sample_probability(self): 
+        # returns a numpy array of the probability of sampling 
+        # calculates at each run 
+        #print(self.memory)
+        
+        mem_len = len(list(self.memory))
+        print(mem_len,'+++')
+        sample_probabilities = np.zeros(mem_len)
+        
+        #priority_a = 
+        total = 0 
+        index = 0
+        for mem in self.memory: 
+            priority_a = self.calculate_priority(mem[5])
+            total += priority_a 
+            sample_probabilities[index] = priority_a 
+            index += 1 
+            
+        print(sample_probabilities.shape)
+        
+        
+        
+        for i in range(mem_len): 
+            sample_probabilities[i] = sample_probabilities[i]/total 
+            
+        print(np.sum(sample_probabilities))
+        return sample_probabilities
+            
+        
+    
     def remember(self, 
                  state, 
                  action, 
@@ -175,9 +226,11 @@ class DQN:
         if self.PriorityExperienceReplay: 
             # note this conversion is extremely inefficient 
             
-            self.memory.append([state, action, reward, new_state, done, td_error])
+            self.memory.append([state, action, reward, new_state, done, abs(td_error)])
             #print(self.memory)
             sort_list = sorted(self.memory, key=lambda mem: mem[5]) 
+            
+            
             #print(sort_list)
             self.memory = deque(sort_list,maxlen=2000)
             # step 3) sort by the TD-Error 
@@ -187,6 +240,7 @@ class DQN:
             #print(self.pq)
             
         else: 
+            print('wrong pass')
             self.memory.append([state, action, reward, new_state, done]) 
         
         
@@ -204,8 +258,15 @@ class DQN:
         
         # select replay samples
         if self.PriorityExperienceReplay: 
+            mem_len = len(self.memory)
+            
+            sample_probabilities = self.calculate_sample_probability()
+            #temp_arr = np.asarray(self.memory) 
+            sample_indexes = np.random.choice(mem_len,batch_size,replace=False,p=sample_probabilities)
+            
+            samples = [self.memory[i] for i in sample_indexes]
             # note conversion to and from deque is super inefficient and becomes much worse as deque grows 
-            samples = list(self.memory)[-batch_size:] # correct sorting to get the top TD_Errors 
+            #samples = list(self.memory)[-batch_size:] # correct sorting to get the top TD_Errors 
             # now need to anneal this 
             #print(len(samples))
             #print(samples)
