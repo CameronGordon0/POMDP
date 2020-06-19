@@ -27,6 +27,8 @@ May need to consider how the 'observable' parts of the state are handled as well
 
 E.g. in rockSample the agent knows where it is & where the rocks are?  
 
+19/06/20 - aiming to include actions in the observation-space (ADQN, ADRQN). Only small modifications required. 
+
 """
 
 import numpy as np 
@@ -71,17 +73,21 @@ def numpy_conversion(simulator,
                      observation,
                      history = False, # can probably leave most of the logic for the history out of this one ?
                      # trick may be to reshape the vector in the main loop rather than messing around with something here 
-                     history_len=1): 
+                     history_len=1,
+                     include_actions=False,
+                     previous_action_index=None): 
     """
     Takes two dictionaries: 
         observed_current_state (fully-observed part of state) 
         observation 
         
     Returns a numpy array responding to the indexing 
+    
+    previous_action will be passed as the index of the action for simplicity 
 
     """
     
-    observation_space = get_observation_space(simulator)
+    observation_space = get_observation_space(simulator,include_actions=include_actions)
     
     length = 0 
     
@@ -104,16 +110,25 @@ def numpy_conversion(simulator,
         
         #print('test',length+index)
         observation_space[length+index]=1
-        # suggested change observation_space[history_len-1][length + index]
+        # suggested change observation_space[history_len-1][length + index] 
+        
+    if include_actions: 
+        for key in simulator.observation_key_list: 
+            length+= len(simulator.observation_names[key]) # there are neater ways of doing this, just getting the start point of action 
+        observation_space[length+previous_action_index] = 1
     
     if history == True: 
         observation_space = np.reshape(observation_space,(1,int(observation_space.shape[0])))
+    
+    #print('numpyconv',observation_space)
+    #print(observation_space.shape)
     
     return observation_space 
 
 def get_observation_space(simulator, 
                           history = False, 
-                          history_len = 1): 
+                          history_len = 1,
+                          include_actions=False): 
     """
     Best approach here may just be a flat structure 
     
@@ -131,7 +146,7 @@ def get_observation_space(simulator,
     will require changes to how the inputs are handled for the other components in main / DQN_Class 
 
     """
-    
+    #print('get_observation_space')
     state_key_list = simulator.state_key_list 
     observation_key_list = simulator.observation_key_list 
     
@@ -143,7 +158,14 @@ def get_observation_space(simulator,
             length+= len(simulator.state[key][0])
             #length = len(initial_belief[key]) # need to change
     for key in observation_key_list: 
-        length+= len(simulator.observation_names[key])
+        length+= len(simulator.observation_names[key]) 
+        
+        
+    if include_actions: 
+        action_keys = list(simulator.actions.keys())[0] 
+        action_list = simulator.actions[action_keys]
+        action_n = len(action_list) 
+        length+= action_n # this should be enough to include it 
     
     if history: 
         observation_space = np.zeros((history_len,length,))
@@ -155,12 +177,17 @@ def get_observation_space(simulator,
     
     #observation_space = np.zeros((history_len,length,)) suggested change 
     #print(len(observation_space))
+    
+    #print('get_obs_space',observation_space)
+    #print(observation_space.shape)
+    
     return observation_space 
 
 
 def reset(simulator,
           history=False,
           history_len=1): 
+    #print('reset')
     state = simulator.initial_state 
     observable_state = simulator.get_observable_state(state)
     return state, observable_state
@@ -172,11 +199,16 @@ def control_method(simulator,
                    verbose=False, 
                    history = False,
                    history_len = 1, 
-                   maxsteps = 40):
+                   maxsteps = 40,
+                   include_actions=False,
+                   fixed_initial=False):
+    
+    #print('Control_method')
+
     if history: 
-        observation_space = get_observation_space(simulator,history=True,history_len=history_len) 
+        observation_space = get_observation_space(simulator,history=True,history_len=history_len,include_actions=include_actions) 
     else:
-        observation_space = get_observation_space(simulator) #needs to contain history as well 
+        observation_space = get_observation_space(simulator,include_actions=include_actions) #needs to contain history as well 
 
     # define some objects for handling actions 
     action_keys = list(simulator.actions.keys())[0] 
@@ -195,12 +227,12 @@ def control_method(simulator,
     
     """
     Note this initialises outside of the observation (i.e. same starting obs for each iteration)
-    
-    
-    observation = {}
-    for i in simulator.observation_key_list: 
-        observation[i] = random.choice(simulator.observation_names[i])
     """
+    if fixed_initial:
+        observation = {}
+        for i in simulator.observation_key_list: 
+            observation[i] = random.choice(simulator.observation_names[i])
+        
     
     # annealling strategy: decay to 0.01 by half of the training epochs 
     
@@ -214,22 +246,26 @@ def control_method(simulator,
         #dqn.current_iteration +=
         
         
-        if it % 50 == 5: 
-            dqn.epsilon+=0.01 # testing this out - want to induce more long-term exploration while still letting it run good policies 
+        if it % 100 == 5 and dqn.epsilon < 1: 
+            dqn.epsilon+=0.15 # testing this out - want to induce more long-term exploration while still letting it run good policies 
         #print(i)
         total_reward = 0 
         state, observable_state = reset(simulator) 
+        
+        #if include_actions: 
+        previous_action_index = np.random.choice(action_n)
         
         """
         Note: including it in this loop reinitialises the problem for each iteration 
         It's a better testing method, but worth examining on the same initial condition too'
         """
-        observation = {}
-        for i in simulator.observation_key_list: 
-            observation[i] = random.choice(simulator.observation_names[i])
+        if not fixed_initial:
+            observation = {}
+            for i in simulator.observation_key_list: 
+                observation[i] = random.choice(simulator.observation_names[i])
         
         if history:
-            iteration_history = get_observation_space(simulator,history=True,history_len=history_len)
+            iteration_history = get_observation_space(simulator,history=True,history_len=history_len,include_actions=include_actions)
             # define within the observable_space function, as this is passed to the DQN file  
         
         if verbose: 
@@ -252,7 +288,12 @@ def control_method(simulator,
             if control == "DQN": 
                 
                 # history stack needs to be specified here 
-                numpy_observation = numpy_conversion(simulator,observable_state,observation,history=history) 
+                numpy_observation = numpy_conversion(simulator,
+                                                     observable_state,
+                                                     observation,
+                                                     history=history,
+                                                     include_actions=include_actions,
+                                                     previous_action_index=previous_action_index) 
                 # need to make sure the numpy_observation is the same dim (along the axis) as the history matrix 
                 # want to do this within the numpy_observation 
                 
@@ -266,10 +307,13 @@ def control_method(simulator,
                 # need to make modifications in the dqn file to handle the extra index 
                 action_taken = simulator.actions[action_keys][action_index]
                 
+                #previous_action_index = action_index
+                
             next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
             
             if step_reward >9: 
-                print('look', total_reward)
+                #print('look', total_reward)
+                pass
             # need to do some conversion to this representation?? 
             if verbose: 
                 print('Action taken',action_taken)
@@ -280,9 +324,14 @@ def control_method(simulator,
                 
                 # history stack needs to be specified here. Add new observation, remove the old one 
                 
-                cur_state = numpy_conversion(simulator,observable_state,observation,history=history)
+                cur_state = numpy_conversion(simulator,observable_state,observation,
+                                             history=history,include_actions=include_actions,
+                                             previous_action_index=previous_action_index)
                 obs_new_state = simulator.get_observable_state(next_state)
-                new_state = numpy_conversion(simulator,obs_new_state,step_observation,history=history)
+                previous_action_index = action_index
+                new_state = numpy_conversion(simulator,obs_new_state,step_observation,
+                                             history=history,include_actions=include_actions,
+                                             previous_action_index=previous_action_index)
                 # because this refers to new state not next state (data_type difference) 
                 
                 if history == True: 
@@ -299,6 +348,7 @@ def control_method(simulator,
                 
                 if j >= maxsteps-1: # may want to hard-code a check for terminal state 
                     done = True
+                    print('took max steps')
                     
                 # note this is obviously a hard-coding for the terminal state (not pomdpx generic)
                 if 'robot_0' in simulator.state_key_list:
@@ -357,18 +407,21 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/Tiger.pomdpx', 
+def main(file = '../examples/rockSample-7_8.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
          verbose = False,
          history = False,
          history_len = 4,
-         maxsteps=50): 
+         maxsteps=50,
+         include_actions=True): 
     simulator = Simulator(file)
     simulator.print_model_information()
     
-    x,y,details = control_method(simulator,control,training_period,verbose=verbose,history=history,history_len=history_len,maxsteps=maxsteps)
+    x,y,details = control_method(simulator,control,training_period,
+                                 verbose=verbose,history=history,history_len=history_len,
+                                 maxsteps=maxsteps,include_actions=include_actions)
     
     plot_results(x,y,details)
     
@@ -438,8 +491,8 @@ def unit_test_1():
 if __name__ == '__main__': 
     main(history=True,
          verbose=False,
-         training_period=150,
-         history_len=30,
-         maxsteps = 40)
+         training_period=300,
+         history_len=100,
+         maxsteps = 100)
     #unit_test_1()
     

@@ -76,7 +76,8 @@ class DQN:
                  DRQN = True,
                  Dropout = False,
                  Conv = False, 
-                 PriorityExperienceReplay=True): 
+                 PriorityExperienceReplay=True,
+                 Deep=True): 
         # define the action & the state shape 
         
         # this will probably involve concatinating the fully-observed parts of the state 
@@ -106,7 +107,8 @@ class DQN:
         self.DRQN = DRQN
         self.Dropout=Dropout
         self.Conv = Conv
-        self.PriorityExperienceReplay = PriorityExperienceReplay
+        self.PriorityExperienceReplay = PriorityExperienceReplay 
+        self.Deep = Deep 
         
         self.model = self.create_model()
         
@@ -127,9 +129,9 @@ class DQN:
         
         
     def create_model(self,
-                     L1=50,
-                     L2=30,
-                     L3=50):
+                     L1=100,
+                     L2=100,
+                     L3=100):
         # defined L1,L2,L3 as the neurons in a layer 
         # each to try new architectures (e.g. autoencoding)
         
@@ -152,6 +154,11 @@ class DQN:
             model.add(Dense(L1, input_shape=state_shape, 
             activation="relu"))
         model.add(Dense(L2, activation="relu"))
+        if self.Deep:
+            model.add(Dense(L2, activation="relu"))
+            model.add(Dense(L2, activation="relu"))
+            model.add(Dense(L2, activation="relu"))
+            
         if self.Dropout: 
             model.add(Dropout(0.4))
         model.add(Dense(L3, activation="relu"))
@@ -186,7 +193,7 @@ class DQN:
         #print(self.memory)
         
         mem_len = len(list(self.memory))
-        print(mem_len,'+++')
+        #print(mem_len,'+++')
         sample_probabilities = np.zeros(mem_len)
         
         #priority_a = 
@@ -198,14 +205,14 @@ class DQN:
             sample_probabilities[index] = priority_a 
             index += 1 
             
-        print(sample_probabilities.shape)
+        #print(sample_probabilities.shape)
         
         
         
         for i in range(mem_len): 
             sample_probabilities[i] = sample_probabilities[i]/total 
             
-        print(np.sum(sample_probabilities))
+        #print(np.sum(sample_probabilities))
         return sample_probabilities
             
         
