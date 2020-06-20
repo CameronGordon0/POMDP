@@ -201,7 +201,9 @@ def control_method(simulator,
                    history_len = 1, 
                    maxsteps = 40,
                    include_actions=False,
-                   fixed_initial=False):
+                   fixed_initial=False,
+                   recurrent=False,
+                   training_delay = 1500):
     
     #print('Control_method')
 
@@ -218,12 +220,12 @@ def control_method(simulator,
     
     
     
-    dqn = DQN(action_list, observation_space,history=history) 
+    dqn = DQN(action_list, observation_space,history=history,DRQN=recurrent) 
     # need to check how this is handled in the DQN (history) 
     
     
     results_y = [] 
-    results_x = np.arange(0,training_period)
+    results_x = np.arange(0,training_period+training_delay)
     
     """
     Note this initialises outside of the observation (i.e. same starting obs for each iteration)
@@ -237,10 +239,12 @@ def control_method(simulator,
     # annealling strategy: decay to 0.01 by half of the training epochs 
     
     dqn.epsilon_decay = np.exp((np.log(0.01))/(0.5*training_period))
-    dqn.training_delay = 0.1*training_period # putting in a training delay to force some random samples 
+    dqn.training_delay = training_delay # putting in a training delay to force some random samples 
     
     
-    for it in range(training_period): 
+    max_seen = -1000
+    
+    for it in range(training_period+training_delay): 
         if it > dqn.training_delay: 
             dqn.epsilon *= dqn.epsilon_decay 
         #dqn.current_iteration +=
@@ -298,12 +302,16 @@ def control_method(simulator,
                 # want to do this within the numpy_observation 
                 
                 #history_queue = history_queue(new_observation=numpy_observation,old_history=)
-                if history: 
-                    iteration_history = history_queue(numpy_observation,iteration_history)
-                    action_index = dqn.act(iteration_history)
-                    #print('test',iteration_history)
+                if it > training_delay:
+                    #print('taking expensive calculation')
+                    if history: 
+                        iteration_history = history_queue(numpy_observation,iteration_history)
+                        action_index = dqn.act(iteration_history)
+                        #print('test',iteration_history)
+                    else:
+                        action_index= dqn.act(numpy_observation)
                 else:
-                    action_index= dqn.act(numpy_observation)
+                    action_index = np.random.choice(action_n)
                 # need to make modifications in the dqn file to handle the extra index 
                 action_taken = simulator.actions[action_keys][action_index]
                 
@@ -321,9 +329,22 @@ def control_method(simulator,
             
             if control == "DQN": 
                 # train 
-                
+                create_memories(simulator,
+                    observable_state,
+                    observation,
+                    history,
+                    include_actions,
+                    previous_action_index,
+                    action_index,
+                    next_state,
+                    step_observation,
+                    iteration_history,
+                    maxsteps,
+                    state,
+                    dqn,
+                    step_reward)
                 # history stack needs to be specified here. Add new observation, remove the old one 
-                
+                """
                 cur_state = numpy_conversion(simulator,observable_state,observation,
                                              history=history,include_actions=include_actions,
                                              previous_action_index=previous_action_index)
@@ -357,7 +378,7 @@ def control_method(simulator,
                     
                 dqn.remember(cur_state, action_index, step_reward, new_state, done) 
                 # need to see how this is handled by the dqn file 
-                
+                """
                 # may need to do some thinking on how the stack is remembered 
                 """
                 This is the placement of the replay and train in the original model. 
@@ -378,12 +399,14 @@ def control_method(simulator,
             # need to handle history stack here 
             if done == True: 
                 break
-            
-        dqn.replay() # note: not the original placement (original in the step loop)
-        dqn.target_train()
+        if it > training_delay:
+        # hold off training for 20% of training 
+            dqn.replay() # note: not the original placement (original in the step loop)
+            dqn.target_train()
         # result of training is a much faster iteration 
-    
-        print('iteration',it,control,total_reward,'epsilon',dqn.epsilon)
+        if total_reward > max_seen:
+            max_seen = total_reward
+        print('iteration',it,control,total_reward,'epsilon',round(dqn.epsilon,2),'best seen',max_seen)
         results_y.append(total_reward)
     results_y = np.asarray(results_y)
     
@@ -394,7 +417,74 @@ def control_method(simulator,
     # should also include the problem in the details (pull from parser)
     
     print('ran to here')
-    return results_x, results_y, control
+    return results_x, results_y, control 
+
+def simulate_memories(simulation_length): 
+    """
+    
+    Idea here is to start a DQN 'hot' (i.e. with a filled memory buffer) 
+    
+    This can be done by running random simulations 
+
+    """
+    
+    
+    pass
+
+
+def create_memories(simulator,
+                    observable_state,
+                    observation,
+                    history,
+                    include_actions,
+                    previous_action_index,
+                    action_index,
+                    next_state,
+                    step_observation,
+                    iteration_history,
+                    maxsteps,
+                    state,
+                    dqn,
+                    step_reward):
+    """ 
+    Contains the conversions to run to the DQN 'remember' method 
+    """
+    
+    cur_state = numpy_conversion(simulator,observable_state,observation,
+                                 history=history,include_actions=include_actions,
+                                 previous_action_index=previous_action_index)
+    obs_new_state = simulator.get_observable_state(next_state)
+    previous_action_index = action_index
+    new_state = numpy_conversion(simulator,obs_new_state,step_observation,
+                                 history=history,include_actions=include_actions,
+                                 previous_action_index=previous_action_index)
+    # because this refers to new state not next state (data_type difference) 
+    
+    if history == True: 
+        cur_state = iteration_history
+        new_state = history_queue(new_state, iteration_history)
+         # need to handle the history 
+        # handle this mainly through the history queue function 
+        # it will have a separate history for the cur_state 
+        # and the new_state 
+        
+    else:
+        pass 
+    
+    done = False
+
+        #print('took max steps')
+        
+    # note this is obviously a hard-coding for the terminal state (not pomdpx generic)
+    if 'robot_0' in simulator.state_key_list:
+        if state['robot_0']=='st':
+            done = True 
+        
+    dqn.remember(cur_state, action_index, step_reward, new_state, done) 
+    
+    
+
+
 
 def plot_results(x,y,details): 
     fig = plt.figure()
@@ -415,15 +505,17 @@ def main(file = '../examples/rockSample-3_1.pomdpx',
          history = False,
          history_len = 4,
          maxsteps=50,
-         include_actions=True): 
+         include_actions=True,
+         recurrent=False): 
     simulator = Simulator(file)
     simulator.print_model_information()
     
     x,y,details = control_method(simulator,control,training_period,
                                  verbose=verbose,history=history,history_len=history_len,
-                                 maxsteps=maxsteps,include_actions=include_actions)
+                                 maxsteps=maxsteps,include_actions=include_actions,
+                                 recurrent=recurrent)
     
-    plot_results(x,y,details)
+    plot_results(x,y,model_name[file])
     
     
 def unit_test_1(): 
@@ -483,17 +575,25 @@ def unit_test_1():
     
     #dqn.
     
-    
+
+
+model_name = {'../examples/Tiger.pomdpx':'Tiger',
+              '../examples/rockSample-3_1.pomdpx':'Rock Sample (3,1)',
+              '../examples/rockSample-7_8.pomdpx':'Rock Sample (7,8)',
+              '../examples/rockSample-10_10.pomdpx':'Rock Sample (10,10)',
+              '../examples/rockSample-11_11.pomdpx':'Rock Sample (11,11)'}
     
     
     
     
 if __name__ == '__main__': 
-    main(history=False,
+    main(control="DQN",
+         history=True,
          verbose=False,
-         training_period=1000,
-         history_len=50,
-         maxsteps = 50, 
-         include_actions=True)
+         training_period=50,
+         history_len=30,
+         maxsteps = 30, 
+         include_actions=True,
+         recurrent=True)
     #unit_test_1()
     

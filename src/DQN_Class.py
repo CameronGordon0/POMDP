@@ -189,13 +189,13 @@ class DQN:
         # attempting to skew it positive 
         # original was return np.power(abs(td_error)+self.min_priority,self.alpha) for both 
         
-        original_calc = True 
+        original_calc = True  
         
         if original_calc: 
             return np.power(abs(td_error)+self.min_priority,self.alpha)
         else:
             if td_error > 0: 
-                return np.power(abs(td_error)*abs(td_error)+self.min_priority,self.alpha)
+                return np.power(abs(td_error)*abs(td_error)*abs(td_error)+self.min_priority,self.alpha)
                 
             else: 
                 return np.power(abs(td_error)/2+self.min_priority,self.alpha) 
@@ -272,7 +272,7 @@ class DQN:
     def replay(self):
         # note: need to modify this for PER (extract the TD-Error & sort the memory)
         
-        batch_size = 32 # batch size reduced to force earlier use of memory 
+        batch_size = 320 # batch size reduced to force earlier use of memory 
         if len(self.memory) < batch_size: 
             return
         
@@ -282,7 +282,8 @@ class DQN:
             
             sample_probabilities = self.calculate_sample_probability()
             #temp_arr = np.asarray(self.memory) 
-            sample_indexes = np.random.choice(mem_len,batch_size,replace=False,p=sample_probabilities)
+            sample_indexes = np.random.choice(mem_len,batch_size,replace=True,p=sample_probabilities)
+            # use true or false here?? 
             
             samples = [self.memory[i] for i in sample_indexes]
             # note conversion to and from deque is super inefficient and becomes much worse as deque grows 
