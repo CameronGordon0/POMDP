@@ -208,6 +208,7 @@ class DQN:
         mem_len = len(list(self.memory))
         #print(mem_len,'+++')
         sample_probabilities = np.zeros(mem_len)
+        importance_weights = np.zeros(mem_len) # note: unsure how to standardise this 
         
         #priority_a = 
         total = 0 
@@ -224,9 +225,16 @@ class DQN:
         
         for i in range(mem_len): 
             sample_probabilities[i] = sample_probabilities[i]/total 
+            importance_weights[i] = np.power((1/mem_len)*(1/sample_probabilities[i]),self.beta) 
+            
+            # also need to normalize the importance_weights & decide how to sample according to the weights 
             
         #print(np.sum(sample_probabilities))
-        return sample_probabilities
+        return sample_probabilities 
+    
+        
+    
+    
             
         
     
@@ -260,7 +268,7 @@ class DQN:
             #print(self.pq)
             
         else: 
-            print('wrong pass')
+            #print('wrong pass')
             self.memory.append([state, action, reward, new_state, done]) 
         
         
@@ -272,7 +280,7 @@ class DQN:
     def replay(self):
         # note: need to modify this for PER (extract the TD-Error & sort the memory)
         
-        batch_size = 320 # batch size reduced to force earlier use of memory 
+        batch_size = 32 # batch size reduced to force earlier use of memory 
         if len(self.memory) < batch_size: 
             return
         

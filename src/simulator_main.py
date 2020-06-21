@@ -200,10 +200,11 @@ def control_method(simulator,
                    history = False,
                    history_len = 1, 
                    maxsteps = 40,
-                   include_actions=False,
-                   fixed_initial=False,
-                   recurrent=False,
-                   training_delay = 1500):
+                   include_actions = False,
+                   fixed_initial = False,
+                   recurrent = False,
+                   training_delay = 0,
+                   priority_replay = False):
     
     #print('Control_method')
 
@@ -220,7 +221,11 @@ def control_method(simulator,
     
     
     
-    dqn = DQN(action_list, observation_space,history=history,DRQN=recurrent) 
+    dqn = DQN(action_list, 
+              observation_space,
+              history=history,
+              DRQN=recurrent,
+              PriorityExperienceReplay = priority_replay) 
     # need to check how this is handled in the DQN (history) 
     
     
@@ -247,11 +252,12 @@ def control_method(simulator,
     for it in range(training_period+training_delay): 
         if it > dqn.training_delay: 
             dqn.epsilon *= dqn.epsilon_decay 
+            #dqn.beta *= dqn.epsilon_decay # decay beta at the same rate as epsilon for simplicity 
         #dqn.current_iteration +=
         
         
-        if it % 100 == 5 and dqn.epsilon < 1: 
-            dqn.epsilon+=0.01 # testing this out - want to induce more long-term exploration while still letting it run good policies 
+        #if it % 100 == 5 and dqn.epsilon < 1: 
+        #   dqn.epsilon+=0.01 # testing this out - want to induce more long-term exploration while still letting it run good policies 
         #print(i)
         total_reward = 0 
         state, observable_state = reset(simulator) 
@@ -311,6 +317,7 @@ def control_method(simulator,
                     else:
                         action_index= dqn.act(numpy_observation)
                 else:
+                    #print('random choice')
                     action_index = np.random.choice(action_n)
                 # need to make modifications in the dqn file to handle the extra index 
                 action_taken = simulator.actions[action_keys][action_index]
@@ -417,7 +424,7 @@ def control_method(simulator,
     # should also include the problem in the details (pull from parser)
     
     print('ran to here')
-    return results_x, results_y, control 
+    return results_x, results_y  
 
 def simulate_memories(simulation_length): 
     """
@@ -506,14 +513,16 @@ def main(file = '../examples/rockSample-3_1.pomdpx',
          history_len = 4,
          maxsteps=50,
          include_actions=True,
-         recurrent=False): 
+         recurrent=False,
+         priority_replay = False,
+         training_delay = 0): 
     simulator = Simulator(file)
     simulator.print_model_information()
     
-    x,y,details = control_method(simulator,control,training_period,
+    x,y = control_method(simulator,control,training_period,
                                  verbose=verbose,history=history,history_len=history_len,
                                  maxsteps=maxsteps,include_actions=include_actions,
-                                 recurrent=recurrent)
+                                 recurrent=recurrent, priority_replay = priority_replay)
     
     plot_results(x,y,model_name[file])
     
@@ -594,6 +603,6 @@ if __name__ == '__main__':
          history_len=30,
          maxsteps = 30, 
          include_actions=True,
-         recurrent=True)
+         recurrent=False)
     #unit_test_1()
     
