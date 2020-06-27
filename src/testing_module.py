@@ -50,7 +50,9 @@ model_name = {'../examples/Tiger.pomdpx':'Tiger',
               '../examples/rockSample-3_1.pomdpx':'Rock Sample (3,1)',
               '../examples/rockSample-7_8.pomdpx':'Rock Sample (7,8)',
               '../examples/rockSample-10_10.pomdpx':'Rock Sample (10,10)',
-              '../examples/rockSample-11_11.pomdpx':'Rock Sample (11,11)'} 
+              '../examples/rockSample-11_11.pomdpx':'Rock Sample (11,11)',
+              '../examples/Tag.pomdpx':'Tag',
+              '../examples/auvNavigation.pomdpx': 'AUV'} 
 
 
 
@@ -123,13 +125,13 @@ for recurrency in bool_list:
 def run_tests(prioritised=False,moving_average=True,av_len=8,save_fig=True): 
     
     
-    model = 'Rock Sample (3,1)'
-    training_period = 150
+    model = 'AUV'
+    training_period = 10
     history = True 
-    history_len = 15
+    history_len = 5
     control = 'DQN' 
     #recurrency = False 
-    maxsteps = 30  
+    maxsteps = 5  
     #include_actions = False
     #prioritised = False 
     
