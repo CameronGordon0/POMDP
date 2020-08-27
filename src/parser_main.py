@@ -30,11 +30,11 @@ class Parser():
 def main(): 
     print('main') 
     #model_filename = '../examples/functional_imitation.pomdpx'
-    #model_filename = '../examples/Tiger.pomdpx'
+    model_filename = '../examples/Tiger.pomdpx'
     #model_filename = '../examples/rockSample-3_1.pomdpx'
     #model_filename = '../examples/rockSample-7_8.pomdpx'
     #model_filename = '../examples/Tag.pomdpx'
-    model_filename = '../examples/auvNavigation.pomdpx'
+    #model_filename = '../examples/auvNavigation.pomdpx'
     
     root = ET.parse(model_filename).getroot()
     print(get_description(root))

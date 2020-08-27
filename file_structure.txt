@@ -1,0 +1,12 @@
+|-POMDP
+|	|- examples 
+|		|- (POMDPX files stored here)
+|
+|	|-src 
+|		|- (Python files for the parser and simulator stored here)
+|
+|	|- Results 
+|		|- (Graph results stored here) 
+|
+|	|- custom_gym 
+|		|- (module for creating a custom gym stored here)
