@@ -60,6 +60,19 @@ print(obs)
 #env.step()
 #env.reset() 
 
-from stable_baselines.common.env_checker import check_env
+"""
+Note that stable baselines requires that Tensorflow be from versions 1.8.0 to 1.15.0 
+To do this use 'pip install tensorflow==1.15.0' 
 
+Also an issue with Python 3.8. use conda install python=3.7.6 
+"""
+
+from stable_baselines.common.env_checker import check_env
+print("check env")
 check_env(env)
+
+#from stable_baselines.common.policies import MlpPolicy
+#from stable_baselines.common import make_vec_env
+from stable_baselines import A2C
+
+model = A2C('CnnPolicy', env).learn(total_timesteps=10)

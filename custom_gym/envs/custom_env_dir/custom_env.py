@@ -148,7 +148,7 @@ class CustomEnv(gym.Env):
         for i in self.sim.observation_key_list: 
             self.observation[i] = random.choice(self.sim.observation_names[i])
             
-        gym_observation = numpy_conversion(self.sim, observable_state, observation) 
+        gym_observation = numpy_conversion(self.sim, observable_state, self.observation) 
         
         return gym_observation
     
