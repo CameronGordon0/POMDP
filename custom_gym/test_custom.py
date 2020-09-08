@@ -65,6 +65,8 @@ Note that stable baselines requires that Tensorflow be from versions 1.8.0 to 1.
 To do this use 'pip install tensorflow==1.15.0' 
 
 Also an issue with Python 3.8. use conda install python=3.7.6 
+
+use pip install git+https://github.com/hill-a/stable-baselines
 """
 
 from stable_baselines.common.env_checker import check_env
