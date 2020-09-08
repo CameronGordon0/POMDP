@@ -286,7 +286,7 @@ class Simulator():
         new_state = self.get_new_state(action, state)
         
         # also need to pull out the observable parts of the state 
-        observable_state = self.get_observable_state(state)
+        observable_state = self.get_observable_state(state) # this should be new state, but further down inthe pipeline it's been manually converted ... 
 
                 # this is observable to the agent - need to include in the observation??? 
             #print([self.state[key] if self.state[key][1] == 'true'])
@@ -296,6 +296,8 @@ class Simulator():
             
         reward_index = self.get_reward_tuple(action, state)
         step_reward = self.reward[reward_index]
+        
+        #print("TEST",new_state,obs_dict,observable_state)
         
         return new_state, obs_dict, step_reward, observable_state
 

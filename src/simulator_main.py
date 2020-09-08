@@ -32,7 +32,6 @@ E.g. in rockSample the agent knows where it is & where the rocks are?
 """
 
 import numpy as np 
-from DQN_Class import DQN
 from pomdp_simulator import Simulator
 import random 
 import matplotlib.pyplot as plt 
@@ -206,6 +205,8 @@ def control_method(simulator,
                    training_delay = 0,
                    priority_replay = False):
     
+    from DQN_Class import DQN # throwing this here to avoid dependency issues with custom_gym
+
     #print('Control_method')
 
     if history: 
@@ -325,6 +326,7 @@ def control_method(simulator,
                 #previous_action_index = action_index
                 
             next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
+            #print("TEST",next_state,observable_state)
             
             if step_reward >9: 
                 #print('look', total_reward)

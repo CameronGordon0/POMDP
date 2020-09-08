@@ -54,5 +54,12 @@ import envs.custom_env_dir
 
 
 env = gym.make('CustomEnv-v0')
-env.step('listen')
-env.reset() 
+#print(env.action_space.sample())
+obs, reward, done, info = env.step(env.action_space.sample())
+print(obs)
+#env.step()
+#env.reset() 
+
+from stable_baselines.common.env_checker import check_env
+
+check_env(env)
