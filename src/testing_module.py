@@ -52,7 +52,8 @@ model_name = {'../examples/Tiger.pomdpx':'Tiger',
               '../examples/rockSample-10_10.pomdpx':'Rock Sample (10,10)',
               '../examples/rockSample-11_11.pomdpx':'Rock Sample (11,11)',
               '../examples/Tag.pomdpx':'Tag',
-              '../examples/auvNavigation.pomdpx': 'AUV'} 
+              '../examples/auvNavigation.pomdpx': 'AUV',
+              '../examples/functional_imitation.pomdpx':'functional_imitation'} 
 
 
 
@@ -125,10 +126,10 @@ for recurrency in bool_list:
 def run_tests(prioritised=False,moving_average=True,av_len=8,save_fig=True): 
     
     
-    model = 'AUV'
+    model = 'functional_imitation'
     training_period = 10
     history = True 
-    history_len = 5
+    history_len = 1
     control = 'DQN' 
     #recurrency = False 
     maxsteps = 5  

@@ -506,7 +506,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/rockSample-3_1.pomdpx', 
+def main(file = '../examples/rockSample-7_8.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -531,7 +531,7 @@ def main(file = '../examples/rockSample-3_1.pomdpx',
     
 def unit_test_1(): 
     # testing history componets in control_method 
-    file = '../examples/rockSample-3_1.pomdpx'
+    #file = '../examples/rockSample-3_1.pomdpx'
     #file = '../examples/rockSample-7_8.pomdpx'
     #file = '../examples/Tiger.pomdpx'
     simulator = Simulator(file)
@@ -601,10 +601,11 @@ if __name__ == '__main__':
     main(control="DQN",
          history=True,
          verbose=False,
-         training_period=50,
+         training_period=5000,
          history_len=30,
-         maxsteps = 30, 
+         maxsteps = 100, 
          include_actions=True,
-         recurrent=False)
+         recurrent=True)
+    print("test")
     #unit_test_1()
     

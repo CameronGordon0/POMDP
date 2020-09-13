@@ -51,6 +51,7 @@ from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, LSTM, Dropout, Conv2D, MaxPooling2D  
 from keras.optimizers import Adam 
+import keras.losses
 import random 
 import numpy as np 
 
@@ -130,8 +131,8 @@ class DQN:
         
     def create_model(self,
                      L1=50,
-                     L2=30,
-                     L3=40):
+                     L2=50,
+                     L3=50):
         # defined L1,L2,L3 as the neurons in a layer 
         # each to try new architectures (e.g. autoencoding)
         
@@ -170,8 +171,10 @@ class DQN:
             model.add(LSTM(100))
         
         model.add(Dense(len(self.action_vector)))
-        model.compile(loss="mean_squared_error",
-            optimizer=Adam(lr=self.learning_rate))
+        #model.compile(loss="mean_squared_error",
+        #optimizer=Adam(lr=self.learning_rate))
+        model.compile(loss=keras.losses.Huber(),
+                      optimizer=Adam(lr=self.learning_rate)) # trying out a different loss function - think the risk aversion comes from here. Tried mean_squared_logarithmic_error 
         return model 
     
     def calculate_TD_Error(self,state,action,reward,new_state): 

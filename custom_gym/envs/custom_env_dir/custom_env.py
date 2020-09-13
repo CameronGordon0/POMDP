@@ -43,6 +43,7 @@ build_directory_path()
 
 from pomdp_simulator import *
 from simulator_main import numpy_conversion
+import numpy as np
 
 
 class CustomEnv(gym.Env): 
@@ -118,10 +119,10 @@ class CustomEnv(gym.Env):
         #print(action)
         #print(self.action_keys)
         #print(self.action_list[0])
-        #print(new_state)
+        print(new_state)
         #print(obs_dict) 
-        #print(step_reward) 
-        #print(observable_state) # is this working properly? appears to be the state before the actions is taken 
+        print(step_reward) 
+        print(observable_state) # is this working properly? appears to be the state before the actions is taken 
         
         # needs to return 'observation, reward, done, info' for the openAI API 
         # observation needs to be an openAI space. i.e. BOX 

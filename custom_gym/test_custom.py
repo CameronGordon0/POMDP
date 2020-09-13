@@ -67,14 +67,18 @@ To do this use 'pip install tensorflow==1.15.0'
 Also an issue with Python 3.8. use conda install python=3.7.6 
 
 use pip install git+https://github.com/hill-a/stable-baselines
+
+note: directly import the class from the stable_baselines. file path on github
+
+avoid ddpg as MPI introduces a lot of issues 
 """
 
 from stable_baselines.common.env_checker import check_env
 print("check env")
 check_env(env)
 
-#from stable_baselines.common.policies import MlpPolicy
-#from stable_baselines.common import make_vec_env
-from stable_baselines import A2C
+from stable_baselines.common.vec_env import DummyVecEnv
+from stable_baselines.deepq.policies import MlpPolicy
+from stable_baselines.deepq import DQN
 
-model = A2C('CnnPolicy', env).learn(total_timesteps=10)
+model = DQN(MlpPolicy, env).learn(total_timesteps=10)
