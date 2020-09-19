@@ -171,10 +171,10 @@ class DQN:
             model.add(LSTM(100))
         
         model.add(Dense(len(self.action_vector)))
-        #model.compile(loss="mean_squared_error",
-        #optimizer=Adam(lr=self.learning_rate))
-        model.compile(loss=keras.losses.Huber(),
-                      optimizer=Adam(lr=self.learning_rate)) # trying out a different loss function - think the risk aversion comes from here. Tried mean_squared_logarithmic_error 
+        model.compile(loss="mean_squared_error",
+        optimizer=Adam(lr=self.learning_rate))
+        #model.compile(loss=keras.losses.Huber(),
+        #              optimizer=Adam(lr=self.learning_rate)) # trying out a different loss function - think the risk aversion comes from here. Tried mean_squared_logarithmic_error 
         return model 
     
     def calculate_TD_Error(self,state,action,reward,new_state): 
@@ -398,7 +398,7 @@ class DQN:
         Note: not entirely certain about this reshaping method, but enables the function to run 
         """
         #print('act check',state)
-        
+        #print(self.model.predict(state)[0])
 
         
         return np.argmax(self.model.predict(state)[0]) ## 

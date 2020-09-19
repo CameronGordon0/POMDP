@@ -1,0 +1,11 @@
+"Episode","Step","Action","Observation","Fully Observed State","State","Step Reward","Total Reward","Q-values"
+"0","0","ame","{'obs_sensor': 'ogood'}","{'rover_0': 's1'}","{'rover_0': 's1', 'rock_0': 'bad'}","10.0","0",""
+
+"1","0","as","{'obs_sensor': 'ogood'}","{'rover_0': 's1'}","{'rover_0': 's1', 'rock_0': 'bad'}","-100.0","0","[ 0.06430412  0.10260996 -0.04888205  0.19271982]"
+
+"2","0","as","{'obs_sensor': 'ogood'}","{'rover_0': 's1'}","{'rover_0': 's1', 'rock_0': 'bad'}","-100.0","0","[0.01742674 0.03760137 0.07527232 0.10424639]"
+
+"3","0","as","{'obs_sensor': 'ogood'}","{'rover_0': 's1'}","{'rover_0': 's1', 'rock_0': 'bad'}","-100.0","0","[0.04343257 0.11656357 0.04049939 0.19465414]"
+
+"4","0","as","{'obs_sensor': 'ogood'}","{'rover_0': 's1'}","{'rover_0': 's1', 'rock_0': 'bad'}","-100.0","0","[ 0.06430412  0.10260996 -0.04888205  0.19271982]"
+

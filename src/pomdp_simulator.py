@@ -22,15 +22,6 @@ To do:
 
 from parser_main import Parser 
 import numpy as np 
-#from qlearning import QLearning
-#from dqn import DQN
-
-#from collections import deque
-#from keras.models import Sequential
-#from keras.layers import Dense, LSTM 
-#from keras.optimizers import Adam
-
-
 
 class Simulator(): 
     def __init__(self, model_filename):
@@ -51,10 +42,8 @@ class Simulator():
         self.observation_key_list <class 'list'> list of observation keys 
         """
         
-        
         parser = Parser(model_filename)
         self.state, self.pairs = parser.states
-        #print(self.state)
         self.state_key_list = list(self.state.keys())
         
         templist = [] 
@@ -70,24 +59,15 @@ class Simulator():
             tempdict[i] = self.state[i] 
             
         self.state = tempdict 
-            
-        
-        # may want to strip out the 'to' states here - adds more issues than its worth '
-        
         
         self.transition = parser.state_transition 
         self.state_variables = parser.state_variable_dict 
-        #print(self.state_variables)
-        #print(self.transition)
-        #print(parser.actions)
         self.actions = parser.actions
         self.action_key_list = list(self.actions.keys())
         
         
         self.reward = parser.reward_table
-        #print(self.reward)
         self.initial_belief = parser.initial_belief
-        #print(self.initial_belief)
         
         self.initial_state = {} 
         for key in self.initial_belief.keys(): 
@@ -95,20 +75,13 @@ class Simulator():
             choices = self.state[key][0] # note: may need to pull out observability here 
             choice = np.random.choice(choices,p=distribution)
             self.initial_state[key] = choice
-            
-        #print(self.initial_state)
         
         self.observation = parser.obs_table
-        #self.observation_name = parser.observations['obs_sensor']
-        #print(self.observation)
         self.observation_names = parser.observations
         self.observation_key_list = list(parser.observations.keys())
         
-        
-        
-        #print('get_index_test',self.get_index('listen'))
-                                                   
-    def print_model_information(self, verbose = False, show_types=False, show_vars=False): 
+                                                  
+    def print_model_information(self, verbose = True, show_types=False, show_vars=False): 
         if verbose: 
             print('MODEL INFORMATION \n.................................')
             print('State', self.state_key_list)
@@ -120,7 +93,6 @@ class Simulator():
         
         if show_types: 
             print("\nVariable types in init")
-            #print('Parser',type(parser))
             print("self.state", type(self.state))
             print("self.pairs", type(self.pairs)) 
             print("self.state_key_list", type(self.state_key_list)) 
@@ -136,35 +108,28 @@ class Simulator():
             
         if show_vars: 
             print("\nVariables in init")
-            #print('Parser',type(parser))
             print("self.state", self.state)
             print("self.pairs", self.pairs) 
             print("self.state_key_list", self.state_key_list)
-            #print("self.transition", self.transition)
-            #print("self.state_variables", self.state_variables) 
-            #print("self.actions", self.actions)
-            #print("self.action_key_list", self.action_key_list)
-            #print("self.reward", self.reward) 
-            #print("self.initial_belief", self.initial_belief)
-            #print("self.initial_state",self.initial_state)
-            #print("self.observation", self.observation) 
-            #print("self.observation_names", self.observation_names)
-            
-            #for i in self.actions: 
-            #    print(i)
-            
-            #print(self.actions)
-            #print(list(self.actions.keys()),type(list(self.actions.keys())))
+
         
         
     def get_index(self, item): 
+        """
+        Parameters: 
+            item (str) - Name of action or state to find the index for. 
+            
+        Description: 
+        Searches through state and action dictionaries and lists to find the index of 'item'. 
+        
+        Returns: num (int), the index of the item in the relevant [dictionary and list].
+        """
         num = None 
         for key in self.actions: 
             for i in self.actions[key]:
                 try:
                     if i == item: 
                         num = self.actions[key].index(item)
-                    #print(index)
                         break
                 except: 
                     pass 
@@ -178,8 +143,18 @@ class Simulator():
                     pass
         return num
     
-    def get_observation_tuple(self, action, new_state, key): 
-        #observation_table = self.observation[key] 
+    def get_observation_tuple(self, action, new_state): 
+        """
+        Parameters: 
+            action (str) - the action taken 
+            new_state (dict) - the new state that resulted from the action
+            
+        Description: 
+            Gets the tuple of O(s',a); the observation from an action that 
+                               led to the new state
+            
+        Returns: a tuple of the observation
+        """
         action_index = self.get_index(action) 
         observation_tuple = [] 
         observation_tuple.append(action_index)
@@ -187,23 +162,41 @@ class Simulator():
             state_index = self.get_index(new_state[i])
             observation_tuple.append(state_index)
             
-        #print('obs_tuple',observation_tuple)
         observation_tuple = tuple(observation_tuple) 
         return observation_tuple
     
     def get_new_observation(self,action,new_state): 
+        """
+        Parameters: 
+            action (str) - the action taken 
+            new_state (dict) - the new state that resulted from the action 
+            
+        Description: 
+            Get the observation O(s',a) 
+            
+        Returns: a dictionary of the new observation 
+        """
         obs_dict = {} 
         for key in self.observation: 
             observation_table = self.observation[key] 
-            observation_tuple = self.get_observation_tuple(action, new_state, key)
+            observation_tuple = self.get_observation_tuple(action, new_state)
             distr = observation_table[observation_tuple]
             obs_dict[key] = np.random.choice(self.observation_names[key],p=distr)
         return obs_dict 
     
-    def get_action_tuple(self): 
-        pass 
     
     def get_state_tuple(self, action, state, key): 
+        """
+        Parameters: 
+            action (str) - the action taken 
+            state (dict) - the state to be updated 
+            key (str) - the part of the state to be updated (e.g. rock-0, robot-0)
+            
+        Gets the tuple to determine the new state in numpy. 
+        
+        Returns: a tuple to update the state 
+        
+        """
         
         cond_vars = self.state_variables[key]
         update_list = [] 
@@ -221,22 +214,15 @@ class Simulator():
     
     def get_reward_tuple(self, action, state): 
         """
-        
-
         Parameters
         ----------
-        action : TYPE
-            DESCRIPTION.
-        state : TYPE
-            DESCRIPTION.
+        action (str) : the action taken 
+            
+        state (dict) : the resulting state
 
-        Returns
-        -------
-        reward_index : TYPE
-            DESCRIPTION.
+        Returns: a tuple for extracting the reward R(s',a) from numpy.  
 
         """
-        
         
         reward_index = []
         reward_index.append(self.get_index(action))
@@ -248,12 +234,17 @@ class Simulator():
         return reward_index
     
     def get_new_state(self, action, state): 
-        
-        #print('get_new_state')
-        #print('action',type(action),action)
-        #print('state', type(state), state)
-        
-        
+        """
+        Parameters: 
+            action (str) - the action taken 
+            state (dict) - the current state 
+            
+        Description: 
+            Gets the new state. 
+            
+        Returns: 
+            A dictionary of the new state. 
+        """
         
         new_state = {} 
         
@@ -263,9 +254,7 @@ class Simulator():
             """
             update_index = self.get_state_tuple(action, state, key)
             distr = self.transition[key][update_index]
-            
-            #print(distr)
-            
+                        
             choice = np.random.choice(self.state[key][0],p=distr)
             new_state[key]=choice 
         
@@ -276,41 +265,36 @@ class Simulator():
         """ 
         Takes the action (str), state (dict) 
         
-        Returns the next state (dict), observation (dict), and reward (float)
-        
+        Returns the next state (dict), observation (dict), reward (float), 
+        and observable part of the state (dict) 
         
         """
         
-        #print('STEP_FUNCTION')
-
         new_state = self.get_new_state(action, state)
         
         # also need to pull out the observable parts of the state 
         observable_state = self.get_observable_state(state) # this should be new state, but further down inthe pipeline it's been manually converted ... 
 
-                # this is observable to the agent - need to include in the observation??? 
-            #print([self.state[key] if self.state[key][1] == 'true'])
-        
-        
         obs_dict = self.get_new_observation(action, new_state)
-            
         reward_index = self.get_reward_tuple(action, state)
         step_reward = self.reward[reward_index]
-        
-        #print("TEST",new_state,obs_dict,observable_state)
-        
+                
         return new_state, obs_dict, step_reward, observable_state
 
 
 
     def get_observable_state(self, state): 
+        """
+        Parameters: 
+            state (dict) - the current state 
+            
+        Returns: 
+            A dictionary of the observable part of the state. 
+        """
         observable_state = {} 
         for key in state: 
             if self.state[key][1] == 'true': 
-                #print(key) 
-                #print(state)#state[key])
                 observable_state[key] = state[key] 
-                #print(observable_state)
         return observable_state 
     
     def action_to_vector(self): 
@@ -322,5 +306,7 @@ class Simulator():
     
     #def reset_simulator(self):
      #   pass  
+     
+     
     
 

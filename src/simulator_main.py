@@ -8,27 +8,15 @@ Created on Mon May 25 12:28:45 2020
 Difficulties for the simulator modules (issue with the different representations;
                                         currently have three for most of the variables (dict, str, int)) 
 
-Should note that the dict representation was chosen deliberately to handle the hander problems. 
-
-Should try to keep consistent entries.
-
-If necessary, should perform the conversion outside the entry module (to prevent breaking other components) 
-
-Need to do thinking around the qlearning module - the construction of the Q-Matrix
-Should it be belief x action?? 
-
-May be a tricky issue to decide how to handle this - eventually needs to pass to numpy matrices (tabular) & as vectors for the keras implementations. 
-
-Creating a standard way of handling may be useful. 
-
-Experimentation - may want an option to run QLearning etc on the fully observable state. Would be a good cross-check (esp for rockSample) 
-
-May need to consider how the 'observable' parts of the state are handled as well.
-
-E.g. in rockSample the agent knows where it is & where the rocks are?  
-
 19/06/20 - aiming to include actions in the observation-space (ADQN, ADRQN). Only small modifications required. 
 
+19/9/20 - aiming to refactor the code to make it more readable / debuggable. Need to extract diagnostic information 
+
+May be worth rewriting this as a class. Would avoid the passing parameters around as current. 
+
+Currently the file is trying to do too much. Makes it very hard to read. 
+
+Need to use consistent terminology. Look at the POMDP simulator as example. 
 """
 
 import numpy as np 
@@ -46,9 +34,15 @@ import matplotlib.pyplot as plt
 
 
 def history_queue(new_observation=None, old_history=None):
-    # take in a single observation & a current history 
-    # return the new history containing the new observation 
-    # acts as a queue for the numpy arrays (FIFO) 
+    """
+    Parameters: 
+        new_observation (numpy array) 
+        old_history (numpy array) 
+        
+    Description: 
+        Takes in a single observation and the current history, 
+        to return a new history containing the new observation.
+        Acts as a queue for the numpy arrays (FIFO) 
     
     # note that the new_observation needs to have the same dimensions as the old history
     
@@ -57,10 +51,12 @@ def history_queue(new_observation=None, old_history=None):
         # old_history[-1] = np.ones((1,3))
         # new_observation = 2*np.ones((1,1,3))
         # new_hist = history_queue(new_observation,old_history)
-    
-    
-    new_history = old_history[1:] # copies the old history less the oldest observation 
         
+    Return: 
+        new_history (numpy array) 
+    
+    """
+    new_history = old_history[1:] # copies the old history less the oldest observation 
     new_history = np.append(new_history,new_observation,axis=0) 
     
     return new_history  
@@ -203,9 +199,13 @@ def control_method(simulator,
                    fixed_initial = False,
                    recurrent = False,
                    training_delay = 0,
-                   priority_replay = False):
+                   priority_replay = False,
+                   STORE_DIAGNOSTICS=True):
     
     from DQN_Class import DQN # throwing this here to avoid dependency issues with custom_gym
+    
+    if STORE_DIAGNOSTICS: 
+        TRAINING_DETAILS = []
 
     #print('Control_method')
 
@@ -283,8 +283,9 @@ def control_method(simulator,
             print('iteration', it)
         
         done = False
-        
+        EPISODE_DETAILS = []
         for j in range(maxsteps): 
+             
             #if total_reward > 11: 
              #   print('interesting!!!')
             
@@ -314,18 +315,28 @@ def control_method(simulator,
                     if history: 
                         iteration_history = history_queue(numpy_observation,iteration_history)
                         action_index = dqn.act(iteration_history)
+                        it_hist = dqn.state_numpy_conversion(iteration_history)
+                        q_VALS = dqn.model.predict(it_hist)[0]
                         #print('test',iteration_history)
                     else:
                         action_index= dqn.act(numpy_observation)
+                        n_convers = dqn.state_numpy_conversion(numpy_observation)
+                        q_VALS = dqn.model.predict(n_convers)[0]
                 else:
                     #print('random choice')
                     action_index = np.random.choice(action_n)
+                    q_VALS = None#[0 for ppp in action_list]#dqn.model.predict(numpy_observation)[0]
                 # need to make modifications in the dqn file to handle the extra index 
                 action_taken = simulator.actions[action_keys][action_index]
+                
                 
                 #previous_action_index = action_index
                 
             next_state, step_observation, step_reward, observable_state = simulator.step(action_taken,state)
+            TRAINING_DETAILS.append([it,j,action_taken,step_observation,observable_state,state,step_reward,total_reward,q_VALS])
+            
+            #for ppp in range(len(q_VALS)):
+            #    TRAINING_DETAILS.append(q_VALS[ppp])
             #print("TEST",next_state,observable_state)
             
             if step_reward >9: 
@@ -406,6 +417,10 @@ def control_method(simulator,
             # may want to set this up initially and then keep it separate from the immediate state (which is passed to the simulator) 
             observation = step_observation 
             # need to handle history stack here 
+            
+            if 'robot_0' in simulator.state_key_list: 
+                if state['robot_0']=='st':
+                    done = True
             if done == True: 
                 break
         if it > training_delay:
@@ -417,13 +432,20 @@ def control_method(simulator,
             max_seen = total_reward
         print('iteration',it,control,total_reward,'epsilon',round(dqn.epsilon,2),'best seen',max_seen)
         results_y.append(total_reward)
+        
+        
+        TRAINING_DETAILS.append(EPISODE_DETAILS)
+    write_to_csv(TRAINING_DETAILS)
+        
     results_y = np.asarray(results_y)
     
     details = {}
     details['model'] = control 
     # details could be a useful dictionary for storing the key parameters for plotting
     # (e.g. the model type, the key parameters)
-    # should also include the problem in the details (pull from parser)
+    # should also include the problem in the details (pull from parser) 
+    
+    
     
     print('ran to here')
     return results_x, results_y  
@@ -439,6 +461,18 @@ def simulate_memories(simulation_length):
     
     
     pass
+
+def write_to_csv(training_details):
+    import csv 
+    
+    # save the csv file name with some metadata (e.g. model, training length etc) 
+    
+    with open('../Diagnostics/test_write.csv','w+',newline='') as myfile: 
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(['Episode','Step','Action', 'Observation', 'Fully Observed State', 'State','Step Reward','Total Reward','Q-values'])
+        for i in range(len(training_details)): 
+            wr.writerow(training_details[i])
+    
 
 
 def create_memories(simulator,
@@ -506,7 +540,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/rockSample-7_8.pomdpx', 
+def main(file = '../examples/rockSample-3_1.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -516,7 +550,7 @@ def main(file = '../examples/rockSample-7_8.pomdpx',
          maxsteps=50,
          include_actions=True,
          recurrent=False,
-         priority_replay = False,
+         priority_replay = True,
          training_delay = 0): 
     simulator = Simulator(file)
     simulator.print_model_information()
@@ -601,11 +635,11 @@ if __name__ == '__main__':
     main(control="DQN",
          history=True,
          verbose=False,
-         training_period=5000,
-         history_len=30,
-         maxsteps = 100, 
+         training_period=5,
+         history_len=5,
+         maxsteps = 1, 
          include_actions=True,
-         recurrent=True)
+         recurrent=False)
     print("test")
     #unit_test_1()
     
