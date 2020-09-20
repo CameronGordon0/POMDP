@@ -250,6 +250,8 @@ class DQN:
         # note: to convert this to prioritised experience replay, 
         # need to store the TD-Error in this tuple 
         
+        #print('remember',type(new_state),new_state.shape)
+        
         # step 1) Calculate the TD-Error 
         td_error = self.calculate_TD_Error(state,action,reward,new_state)
         
@@ -263,7 +265,7 @@ class DQN:
             
             
             #print(sort_list)
-            self.memory = deque(sort_list,maxlen=2000)
+            self.memory = deque(sort_list,maxlen=5000)
             # step 3) sort by the TD-Error 
             
             # step 4) Annealling (prevent oversampling of top TD entries)

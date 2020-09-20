@@ -118,6 +118,8 @@ def numpy_conversion(simulator,
     #print('numpyconv',observation_space)
     #print(observation_space.shape)
     
+    #print('numpy_conv',observation_space.shape)
+    
     return observation_space 
 
 def get_observation_space(simulator, 
@@ -152,6 +154,7 @@ def get_observation_space(simulator,
             #print(key)
             length+= len(simulator.state[key][0])
             #length = len(initial_belief[key]) # need to change
+            #print(simulator.state[key][0])
     for key in observation_key_list: 
         length+= len(simulator.observation_names[key]) 
         
@@ -183,7 +186,7 @@ def reset(simulator,
           history=False,
           history_len=1): 
     #print('reset')
-    state = simulator.initial_state 
+    state = simulator.set_initial_state() 
     observable_state = simulator.get_observable_state(state)
     return state, observable_state
 
@@ -434,7 +437,7 @@ def control_method(simulator,
         results_y.append(total_reward)
         
         
-        TRAINING_DETAILS.append(EPISODE_DETAILS)
+        #TRAINING_DETAILS.append(EPISODE_DETAILS)
     write_to_csv(TRAINING_DETAILS)
         
     results_y = np.asarray(results_y)
@@ -493,6 +496,8 @@ def create_memories(simulator,
     Contains the conversions to run to the DQN 'remember' method 
     """
     
+    print('called create memories')
+    
     cur_state = numpy_conversion(simulator,observable_state,observation,
                                  history=history,include_actions=include_actions,
                                  previous_action_index=previous_action_index)
@@ -540,7 +545,7 @@ def plot_results(x,y,details):
     #plot(x,y)
     
             
-def main(file = '../examples/rockSample-3_1.pomdpx', 
+def main(file = '../examples/Tiger.pomdpx', 
          control = 'DQN', 
          training_period = 30,
          testing_period = 1,
@@ -635,9 +640,9 @@ if __name__ == '__main__':
     main(control="DQN",
          history=True,
          verbose=False,
-         training_period=5,
-         history_len=5,
-         maxsteps = 1, 
+         training_period=15,
+         history_len=3,
+         maxsteps = 5, 
          include_actions=True,
          recurrent=False)
     print("test")

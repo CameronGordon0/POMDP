@@ -69,12 +69,9 @@ class Simulator():
         self.reward = parser.reward_table
         self.initial_belief = parser.initial_belief
         
-        self.initial_state = {} 
-        for key in self.initial_belief.keys(): 
-            distribution = self.initial_belief[key]
-            choices = self.state[key][0] # note: may need to pull out observability here 
-            choice = np.random.choice(choices,p=distribution)
-            self.initial_state[key] = choice
+        self.initial_state = self.set_initial_state()
+        
+
         
         self.observation = parser.obs_table
         self.observation_names = parser.observations
@@ -303,6 +300,21 @@ class Simulator():
     def vector_to_action(self): 
         pass 
     
+    
+    def set_initial_state(self): 
+        """ 
+        Sets the initial state based on the POMDPX information. 
+        
+        returns the initial state (dict) 
+        """ 
+        
+        initial_state = {} 
+        for key in self.initial_belief.keys(): 
+            distribution = self.initial_belief[key]
+            choices = self.state[key][0] # note: may need to pull out observability here 
+            choice = np.random.choice(choices,p=distribution)
+            initial_state[key] = choice 
+        return initial_state 
     
     #def reset_simulator(self):
      #   pass  
