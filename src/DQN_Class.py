@@ -60,6 +60,9 @@ import numpy as np
 
 USE_GPU = False 
 
+from keras import backend as K
+K.set_session(K.tf.Session(config=K.tf.ConfigProto(intra_op_‌​parallelism_threads=12, inter_op_parallelism_threads=12)))
+
 """
 Note: https://towardsdatascience.com/deep-learning-using-gpu-on-your-macbook-c9becba7c43 
 
