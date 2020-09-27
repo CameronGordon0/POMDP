@@ -41,7 +41,7 @@ terminal_states = {'../examples/Tiger.pomdpx':None,
 class simulatorMain(): 
     
     def __init__(self, file='../examples/rockSample-7_8.pomdpx',
-                 training_period=2000,
+                 training_period=100,
                  verbose=False,
                  history=True,
                  history_len=50,
