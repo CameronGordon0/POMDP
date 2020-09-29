@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep 29 10:33:56 2020
+
+@author: MrCameronGordon
+"""
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -41,6 +48,9 @@ Note:
     - still need to anneal for importance sampling 
     
     
+    
+    
+    29/9/20 - attempting to create a DDQN. May involve cleaning up and simplifying functions here also 
 
 
 
@@ -84,8 +94,7 @@ class DQN:
                  Dropout = False,
                  Conv = False, 
                  PriorityExperienceReplay=True,
-                 Deep=False,
-                 useflooding=True): 
+                 Deep=False): 
         # define the action & the state shape 
         
         # this will probably involve concatinating the fully-observed parts of the state 
@@ -100,16 +109,13 @@ class DQN:
         #self.pq = queue.PriorityQueue(maxsize=2000)
         #print(self.pq)
         
-        self.useflooding = useflooding
-        self.flooding_value = 0
-        
         
         self.gamma = 0.99 
         self.epsilon = 1.0 
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.99
         self.learning_rate = 0.01
-        self.tau = 0.05 # rate of averaging (for training networks) 
+        self.tau = 0.05 
         
         self.state_matrix = state_matrix 
         self.action_vector = action_vector
@@ -121,12 +127,15 @@ class DQN:
         self.PriorityExperienceReplay = PriorityExperienceReplay 
         self.Deep = Deep 
         
-        self.model = self.create_model()
+        #self.model = self.create_model()
         
-        self.target_model = self.create_model() 
+        #self.target_model = self.create_model() 
         
         #self.model = self.create_unet()
         #self.target_model = self.create_unet()
+        
+        self.Q1 = self.create_model()
+        self.Q2 = self.create_model()
         
         if self.PriorityExperienceReplay: 
             # set a couple of the parameters required for importance sampling & prioritised experience replay 
@@ -183,16 +192,11 @@ class DQN:
             model.add(Flatten())
             
         if self.DRQN: 
-            model.add(LSTM(50))
+            model.add(LSTM(100))
         
         model.add(Dense(len(self.action_vector)))
-        
-        if (self.useflooding):
-            model.compile(loss=custom_loss_function,
-                          optimizer=Adam(lr=self.learning_rate)) 
-        else: 
-            model.compile(loss=custom_loss_function,
-                          optimizer=Adam(lr=self.learning_rate)) 
+        model.compile(loss=custom_loss_function,
+        optimizer=Adam(lr=self.learning_rate)) 
         #model.compile(loss="mean_squared_error",
         #optimizer=Adam(lr=self.learning_rate)) 
         #model.compile(loss=keras.losses.Huber(),
@@ -229,11 +233,11 @@ class DQN:
         Q_current = self.model.predict(state)[0][action]
         Q_future = max(self.target_model.predict(new_state)[0])
         """
-        target model is ddqn
+        Q_future may be the issue - try double q learning 
         """
         
         TD_Error = reward + self.gamma*Q_future - Q_current
-        #print(TD_Error)
+        print(TD_Error)
         return TD_Error 
     
     def calculate_priority(self,td_error):
@@ -396,11 +400,6 @@ class DQN:
                 Q_future = max(
                     self.target_model.predict(new_state)[0])
                 target[0][action] = reward + Q_future * self.gamma
-                
-            #print(state)
-            #print(target)
-            #print('target',self.target_model.predict(new_state)[0])
-            #print('model',self.model.predict(new_state)[0])
             self.model.fit(state, target, epochs=1, verbose=0)
             # note: original model here had epochs set as 1 
             # do not see significant performance improvement (indeed may become overfit) 
@@ -410,9 +409,7 @@ class DQN:
         weights = self.model.get_weights()
         target_weights = self.target_model.get_weights()
         for i in range(len(target_weights)):
-            #target_weights[i] = weights[i]
-            target_weights[i] = self.tau*weights[i] + (1-self.tau)*target_weights[i]
-            # note: modifying according to - https://towardsdatascience.com/double-deep-q-networks-905dd8325412
+            target_weights[i] = weights[i]
         self.target_model.set_weights(target_weights) 
         
         
@@ -455,9 +452,19 @@ def custom_loss_function(y_true, y_pred):
     
     We set b as 0.05 here (value is a design decision)
     """
-    flooding_value = 0
     
-    loss = K.abs(K.square(y_pred - y_true)-flooding_value)+flooding_value
+    loss = K.abs(K.square(y_pred - y_true)-0.1)+0.1
     print(loss)
     
     return loss
+
+
+"""
+pseudocode for ddqn: 
+    1) initialise Q1 and Q2 
+    2) choose A based on Q1 and Q2. Will require changes to act, train etc 
+                    currently the network is called 'model'. Refactor this 
+                    
+    3) Update: randomly choose Q1 or Q2 to update 
+                    
+"""

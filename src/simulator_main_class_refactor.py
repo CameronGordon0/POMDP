@@ -18,6 +18,8 @@ from pomdp_simulator import Simulator
 import random 
 import matplotlib.pyplot as plt 
 from DQN_Class import DQN 
+import csv 
+
 
 
 model_name = {'../examples/Tiger.pomdpx':'Tiger',
@@ -40,21 +42,23 @@ terminal_states = {'../examples/Tiger.pomdpx':None,
 
 class simulatorMain(): 
     
-    def __init__(self, file='../examples/rockSample-7_8.pomdpx',
-                 training_period=100,
+    def __init__(self, file='../examples/rockSample-3_1.pomdpx',
+                 training_period=150,
                  verbose=False,
                  history=True,
-                 history_len=50,
-                 maxsteps=50,
+                 history_len=15,
+                 maxsteps=15,
                  include_actions=True,
-                 recurrent=False,
+                 recurrent=True,
                  priority_replay=True,
-                 training_delay=0): 
+                 training_delay=0,
+                 evaluation_period = 150): 
         
         self.simulator = Simulator(file) 
         self.file=file
         self.verbose = verbose 
         self.training_period = training_period 
+        self.evaluation_period = evaluation_period 
         
     
         self.history = history
@@ -75,8 +79,15 @@ class simulatorMain():
         
         
         self.training_details = [] # diagnostics 
-        self.results_y = [] # note append is O(1) 
-        self.results_x = np.arange(0,training_period)
+        self.training_results_y = [] # note append is O(1) 
+        self.training_results_x = np.arange(0,training_period)
+        self.evaluation_results_y =[] 
+        self.evaluation_results_x = np.arange(0,evaluation_period) 
+        
+        self.expert_buffer = [] 
+        self.preloaded_buffer = {}
+
+        
         
         self.state_key_list = self.simulator.state_key_list 
         self.observation_key_list = self.simulator.observation_key_list 
@@ -102,10 +113,14 @@ class simulatorMain():
                        DRQN=self.recurrent,
                        PriorityExperienceReplay = self.priority_replay) 
         
+        self.dqn.epsilon_decay = np.exp((np.log(0.01))/(0.5*self.training_period)) 
+        self.dqn.training_delay = self.training_delay # may draft without training delay 
         
 
     
-    def run(self):
+    def run(self, expert_buffer = True,
+            expert_training = False,
+            presampling = False):
         """
         we could otherwise call this 'run' 
         contains these functionalities: 
@@ -115,7 +130,61 @@ class simulatorMain():
         
         """
         
-        self.control_method()
+        
+        
+        if (expert_buffer):
+            print("Loading expert memories")
+            self.expert_memories()
+            self.dqn.replay() 
+            self.dqn.target_train()
+            
+            print("Pre Evaluating") 
+            self.dqn.epsilon = 0 # set to fixed policy 
+            self.dqn.epsilon_min = 0
+            #print(self.dqn.epsilon)
+            for iteration in range(self.evaluation_period): 
+                #print(self.dqn.epsilon)
+    
+                self.run_iteration(iteration, training = False, presampling = True) 
+            
+        if (presampling): 
+            if (expert_training): 
+                print("Sampling expert experiences")
+            else: 
+                print("Random presampling") 
+            for iteration in range(10):
+                self.run_iteration(iteration, training=False, presampling=presampling,
+                                   expert_training=expert_training) 
+            self.record_expert_training()
+
+            
+        
+        
+        
+        print("Training")
+        self.dqn.epsilon = 1 # set to fixed policy 
+        self.dqn.epsilon_min = 0.01
+        for iteration in range(self.training_period): 
+            self.run_iteration(iteration,training=True) 
+            
+            
+        print("Evaluating") 
+        self.dqn.epsilon = 0 # set to fixed policy 
+        self.dqn.epsilon_min = 0
+        #print(self.dqn.epsilon)
+        for iteration in range(self.evaluation_period): 
+            #print(self.dqn.epsilon)
+
+            self.run_iteration(iteration, training = False) 
+        
+        print("Final result") 
+        total = 0 
+        for i in range(len(self.evaluation_results_y)):
+            total += self.evaluation_results_y[i]
+            if i%10 ==0: 
+                print("it",i,total/(i+1))
+        print("Final", total/self.evaluation_period)
+
         self.write_to_csv() 
         self.plot_results() 
          
@@ -193,18 +262,7 @@ class simulatorMain():
     def update(self): 
         self.numpy_observation = self.numpy_conversion()
         self.history_queue()
-        
-        # easiest way of handling the necessary memory update (s0, s1) 
-        # may be to store a self.previous_history() and a self.new_history() 
-        # may require changes, as currently all in-place conversions 
-        
-        
-        #print(self.history_space)
-        
-        
-        
-        
-        
+
          
     
     def get_observation_space(self): 
@@ -256,126 +314,83 @@ class simulatorMain():
         self.update() # updates the history queue 
 
             
-        
-        
-        
     
-    def control_method(self): 
+    def run_iteration(self, iteration, training=True, presampling = False,
+                      expert_training=False): 
         """
-        Dependencies: simulator, control (Random, Human, DQN), training_period (int), 
-        verbose (bool), history (bool), history_len (int), maxsteps (int), 
-        include_actions (bool), fixed_initial (bool), recurrent (bool), 
-        training_delay (int), priority_replay (bool) 
+        Runs a single iteration of the simulation. 
         
-        Functionalities: 
-            Runs the main logic for the training and simulation 
-            Runs the diagnostic data and write_to_csv 
-            
-            
-        Note: currently very unwieldy, with multiple paths based on boolean values. 
-        Should shift as many of the dependencies into a class attribute as possible. 
-        Should split into sub-methods. Suggested: run_step, run_episode, run_diagnostics. 
-        There's a lot of code here that's just dealing with what should be attributes, 
-        and data conversion. 
-        Should make this for DQN only (if need to have other methods, can do this separately) 
+        Designed to be run for both the training phase and the evaluation. 
+        Returns a few key details from the single iteration. 
         
+        training (bool) - whether the model is training or evaluating 
         """
+        if (training): 
+            self.dqn.epsilon *= self.dqn.epsilon_decay # epsilon annealling 
+        total_reward = 0 
+        self.reset() 
+        done = False 
         
+        if self.verbose: 
+                print('iteration', iteration)
         
-        self.dqn.epsilon_decay = np.exp((np.log(0.01))/(0.5*self.training_period)) 
-        self.dqn.training_delay = self.training_delay # may draft without training delay 
+        for step in range(self.maxsteps):
+            if done == True: 
+                break 
+            if self.verbose: 
+                print('step', step + 1)
         
-        for iteration in range(self.training_period): 
-            self.dqn.epsilon *= self.dqn.epsilon_decay 
+            it_hist = self.dqn.state_numpy_conversion(self.history_space) 
+            q_vals = self.dqn.model.predict(it_hist)[0] 
             
-            total_reward = 0 
-            #episode_details = [] 
+            if (expert_training): 
+                print("step",step+1)
+                print("Observation",self.current_observation)
+                print("Observable state", self.current_observable_state) 
+                action_index = int(input('What action to take:\n'+str(self.action_list)))
+            else:
+                action_index = self.dqn.act(self.history_space) 
+            action_taken = self.simulator.actions[self.action_keys][action_index] 
+            self.previous_action_index = action_index 
             
-            self.reset() # reset to randomised current_state and current observable state 
+            next_state, step_observation, step_reward, observable_state = self.simulator.step(action_taken, self.current_state)
+            total_reward += step_reward 
             
+            if (expert_training): 
+                print('reward',step_reward)
+                self.expert_buffer.append([iteration,self.current_observation, self.current_observable_state,action_index,step_reward])
             
-            done = False 
-            
-            #max_seen = -1000 
+            if (training): 
+                self.training_details.append([iteration, step, self.dqn.epsilon, action_taken, step_observation, self.current_observable_state, self.current_state,step_reward, total_reward, q_vals])
+    
+            self.current_state = next_state 
+            self.current_observable_state = self.simulator.get_observable_state(self.current_state) 
+            self.current_observation = step_observation 
             
             if self.verbose: 
-                print('iteration', iteration)
+                print('Action taken', action_taken) 
+                print('State ', next_state,'\n Observation ',step_observation,'\n', step_reward,'\n') 
+            
+            self.update() 
+            done = self.check_if_terminal() 
+            
+            if (training or presampling):
+                self.create_memories(step_reward,done) 
                 
-            for step in range(self.maxsteps): # assume we're going to use DQN for all here 
-                if done == True: 
-                    break 
-                if self.verbose: 
-                    print('step', step + 1) 
-                
-                it_hist = self.dqn.state_numpy_conversion(self.history_space)
-                
-                q_vals = self.dqn.model.predict(it_hist)[0] # need to re look at this 
-                #q_vals = None
-                action_index = self.dqn.act(self.history_space) 
-                #print(action_index)
-                
-                action_taken = self.simulator.actions[self.action_keys][action_index] 
-                self.previous_action_index = action_index
-                
-                next_state, step_observation, step_reward, observable_state = self.simulator.step(action_taken, self.current_state)
-                #print(next_state,self.current_state)
-                #print(self.current_observation,step_observation)
-                #print(action_taken)
-                
-                
-                total_reward += step_reward 
-                
-
-                
-                self.training_details.append([iteration, step, self.dqn.epsilon, action_taken, step_observation, self.current_observable_state, self.current_state,step_reward, total_reward, q_vals])
-                
-                self.current_state = next_state 
-                
-                self.current_observable_state = self.simulator.get_observable_state(self.current_state)
-                
-                self.current_observation = step_observation # need to check 
-                
-                if self.verbose: 
-                    print('Action taken', action_taken) 
-                    print('State ', next_state,'\n Observation ',step_observation,'\n', step_reward,'\n') 
-                    
-                #self.create_memories() # need to check the details here 
-                
-
-                
-                
-                self.update() 
-                done = self.check_if_terminal() 
-                
-                self.create_memories(step_reward,done)
-                
-                # need to create this method 
-                
+        if (training): 
             self.dqn.replay() 
-            self.dqn.target_train() # need to check both of these methods in the DQN_Class during refactor 
-            
-            if total_reward > self.max_seen: 
-                self.max_seen = total_reward 
-            print('iteration', iteration, total_reward, 'epsilon', round(self.dqn.epsilon,2),'best seen', self.max_seen) 
-            
-            self.results_y.append(total_reward) 
-            
-            #self.training_details.append(episode_)
-                
-                
-                
-            
-            
-            
-            
-            
+            self.dqn.target_train() 
+            self.training_results_y.append(total_reward)
+        if (not training and not presampling): 
+            self.evaluation_results_y.append(total_reward)
+        if total_reward > self.max_seen: 
+            self.max_seen = total_reward 
+        print('iteration', iteration, total_reward, 'epsilon', round(self.dqn.epsilon,2),'best seen', self.max_seen) 
+
             
         
+                                                                            
         
-        
-        
-        
-        pass 
     
     def create_memories(self, step_reward,done): 
         """ 
@@ -388,16 +403,13 @@ class simulatorMain():
         """
         # may be easiest to just convert them directly in here 
         
-        
-        
-        
-        
-        
         self.dqn.remember(self.old_history,self.previous_action_index,step_reward,self.history_space,done) #### need to do properly. Actually think about this. 
         pass # note this is just a conversion and wrapper to call DQN methods 
-    
-    
+        
     # these are diagnostic / results utilities 
+
+    
+    
     
     def plot_results(self): 
         """
@@ -408,7 +420,7 @@ class simulatorMain():
             y: the score per epoch 
         """ 
         fig = plt.figure()
-        plt.plot(self.results_x,self.results_y) 
+        plt.plot(self.training_results_x,self.training_results_y) 
         plt.title(model_name[self.file])
         plt.xlabel('Epoch') 
         plt.ylabel('Score')
@@ -423,7 +435,6 @@ class simulatorMain():
         Need to have a process for writing the file name. Best idea is simply model_name. Avoids creating too many files. 
         
         """
-        import csv 
         
         with open('../Diagnostics/'+model_name[self.file]+'.csv','w+',newline='') as myFile: 
             wr = csv.writer(myFile, quoting=csv.QUOTE_ALL) # note: quoting may change the readout 
@@ -431,6 +442,50 @@ class simulatorMain():
             for row in range(len(self.training_details)): 
                 wr.writerow(self.training_details[row]) 
                 
+                
+    def record_expert_training(self): 
+        
+        with open('../Expert_training/'+model_name[self.file]+'A.csv','w+',newline='') as myFile: 
+            wr = csv.writer(myFile, quoting=csv.QUOTE_ALL)
+            wr.writerow(['iteration','observation','observed state','action','step reward'])
+            for row in range(len(self.expert_buffer)): 
+                wr.writerow(self.expert_buffer[row])
+                
+    def expert_memories(self): 
+        
+        self.reset()
+        current_iteration = -1
+        
+        with open('../Expert_training/'+model_name[self.file]+'.csv', newline='') as myFile: 
+            reader = csv.DictReader(myFile,quoting=csv.QUOTE_ALL) 
+            for row in reader: 
+                if (int(row['iteration'])>current_iteration): 
+                    self.reset()
+                    current_iteration = int(row['iteration'])
+                
+                self.current_observation = eval(row['observation'])
+                self.current_observable_state = eval(row['observed state'])
+                self.previous_action_index = int(row['action'])
+                step_reward = float(row['step reward'])
+
+
+
+                
+                done = False
+                for i in self.current_observable_state:
+                    if self.current_observable_state[i] == terminal_states[self.file]: 
+                        done = True
+                        
+                self.update()
+                        
+                self.create_memories(step_reward, done)
+                
+                if done == True: 
+                    self.reset() 
+                    
+                #print(self.old_history)
+                #print(self.history_space)
+        
                 
     def check_if_terminal(self): 
         """
