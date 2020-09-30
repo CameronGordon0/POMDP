@@ -20,6 +20,10 @@ import matplotlib.pyplot as plt
 from DQN_Class import DQN 
 import csv 
 
+from datetime import date
+import statistics
+
+
 
 
 model_name = {'../examples/Tiger.pomdpx':'Tiger',
@@ -42,17 +46,17 @@ terminal_states = {'../examples/Tiger.pomdpx':None,
 
 class simulatorMain(): 
     
-    def __init__(self, file='../examples/rockSample-3_1.pomdpx',
-                 training_period=5,
+    def __init__(self, file='../examples/Tag.pomdpx',
+                 training_period=1000,
                  verbose=False,
                  history=True,
-                 history_len=5,
-                 maxsteps=5,
+                 history_len=3,
+                 maxsteps=150,
                  include_actions=True,
-                 recurrent=True,
+                 recurrent=False,
                  priority_replay=True,
                  training_delay=0,
-                 evaluation_period = 5): 
+                 evaluation_period = 1000): 
         
         self.simulator = Simulator(file) 
         self.file=file
@@ -76,7 +80,9 @@ class simulatorMain():
         self.include_reward = False # note: this is an idea which we'll test later (including the reward to the observation)
         
         self.training_delay = training_delay 
-        
+        self.wide = False
+        self.deep = False
+
         
         self.training_details = [] # diagnostics 
         self.training_results_y = [] # note append is O(1) 
@@ -98,10 +104,17 @@ class simulatorMain():
         self.action_n = len(self.action_list) 
         self.action_space = np.zeros(self.action_n)
         
+        self.final_result = 0 
+        self.std_deviation = 0 
+        self.flooding_value = 0.3
+        
         
         self.observation_space_length = self.get_observation_space() 
 
         self.reset() 
+        self.expert = False
+        self.random_training = False
+        
 
         
         
@@ -111,16 +124,19 @@ class simulatorMain():
                        self.history_space,
                        history=self.history,
                        DRQN=self.recurrent,
-                       PriorityExperienceReplay = self.priority_replay) 
+                       PriorityExperienceReplay = self.priority_replay, 
+                       Deep = self.deep) 
         
         self.dqn.epsilon_decay = np.exp((np.log(0.01))/(0.5*self.training_period)) 
         self.dqn.training_delay = self.training_delay # may draft without training delay 
+        
+        
         
 
     
     def run(self, expert_buffer = False,
             expert_training = False,
-            presampling = False):
+            presampling = True):
         """
         we could otherwise call this 'run' 
         contains these functionalities: 
@@ -133,10 +149,12 @@ class simulatorMain():
         
         
         if (expert_buffer):
+            self.expert = True
             print("Loading expert memories")
             self.expert_memories()
             self.dqn.replay() 
             self.dqn.target_train()
+            """
             
             print("Pre Evaluating") 
             self.dqn.epsilon = 0 # set to fixed policy 
@@ -146,13 +164,14 @@ class simulatorMain():
                 #print(self.dqn.epsilon)
     
                 self.run_iteration(iteration, training = False, presampling = True) 
-            
+            """
         if (presampling): 
             if (expert_training): 
                 print("Sampling expert experiences")
             else: 
                 print("Random presampling") 
-            for iteration in range(10):
+                self.random_training = True 
+            for iteration in range(100):
                 self.run_iteration(iteration, training=False, presampling=presampling,
                                    expert_training=expert_training) 
             self.record_expert_training()
@@ -160,33 +179,37 @@ class simulatorMain():
             
         
         
-        
-        print("Training")
-        self.dqn.epsilon = 1 # set to fixed policy 
-        self.dqn.epsilon_min = 0.01
-        for iteration in range(self.training_period): 
-            self.run_iteration(iteration,training=True) 
-            
-            
-        print("Evaluating") 
-        self.dqn.epsilon = 0 # set to fixed policy 
-        self.dqn.epsilon_min = 0
-        #print(self.dqn.epsilon)
-        for iteration in range(self.evaluation_period): 
+        if not (expert_training):
+            print("Training")
+            self.dqn.epsilon = 1 # set to fixed policy 
+            self.dqn.epsilon_min = 0.01
+            for iteration in range(self.training_period): 
+                self.run_iteration(iteration,training=True) 
+                
+                
+            print("Evaluating") 
+            self.dqn.epsilon = 0 # set to fixed policy 
+            self.dqn.epsilon_min = 0
             #print(self.dqn.epsilon)
-
-            self.run_iteration(iteration, training = False) 
-        
-        print("Final result") 
-        total = 0 
-        for i in range(len(self.evaluation_results_y)):
-            total += self.evaluation_results_y[i]
-            if i%10 ==0: 
-                print("it",i,total/(i+1))
-        print("Final", total/self.evaluation_period)
-
-        self.write_to_csv() 
-        self.plot_results() 
+            for iteration in range(self.evaluation_period): 
+                #print(self.dqn.epsilon)
+    
+                self.run_iteration(iteration, training = False) 
+            
+            print("Final result") 
+            total = 0 
+            for i in range(len(self.evaluation_results_y)):
+                total += self.evaluation_results_y[i]
+                if i%10 ==0: 
+                    print("it",i,total/(i+1))
+            print("Final", total/self.evaluation_period)
+            self.final_result = total/self.evaluation_period
+            self.std_deviation = statistics.stdev(self.evaluation_results_y)
+    
+            
+            self.write_to_csv() 
+            self.plot_results() 
+            self.record_results()
          
     
     # these are data conversion utilities 
@@ -450,6 +473,18 @@ class simulatorMain():
             wr.writerow(['iteration','observation','observed state','action','step reward'])
             for row in range(len(self.expert_buffer)): 
                 wr.writerow(self.expert_buffer[row])
+                
+    def record_results(self): 
+        with open('../Results/Results_aggregated.csv','a+',newline='') as myFile: 
+            wr = csv.writer(myFile)
+            wr.writerow([date.today(), model_name[self.file], 
+                         self.training_period, self.evaluation_period,
+                         self.history_len, self.maxsteps,
+                         self.flooding_value, self.include_actions,
+                         self.recurrent, self.expert,
+                         self.random_training, self.priority_replay, 
+                         self.final_result, self.std_deviation,
+                         self.deep,self.wide])
                 
     def expert_memories(self): 
         

@@ -142,9 +142,9 @@ class DQN:
         
         
     def create_model(self,
-                     L1=50,
-                     L2=50,
-                     L3=50):
+                     L1=15,
+                     L2=15,
+                     L3=15):
         # defined L1,L2,L3 as the neurons in a layer 
         # each to try new architectures (e.g. autoencoding)
         
@@ -168,7 +168,6 @@ class DQN:
             activation="relu"))
         model.add(Dense(L2, activation="relu"))
         if self.Deep:
-            model.add(Dense(L2, activation="relu"))
             model.add(Dense(L2, activation="relu"))
             model.add(Dense(L2, activation="relu"))
             model.add(Dense(L2, activation="relu"))
@@ -455,8 +454,8 @@ def custom_loss_function(y_true, y_pred):
     
     We set b as 0.05 here (value is a design decision)
     """
-    flooding_value = 0
     
+    flooding_value = 0.3
     loss = K.abs(K.square(y_pred - y_true)-flooding_value)+flooding_value
     print(loss)
     
