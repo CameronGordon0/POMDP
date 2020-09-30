@@ -43,16 +43,16 @@ terminal_states = {'../examples/Tiger.pomdpx':None,
 class simulatorMain(): 
     
     def __init__(self, file='../examples/rockSample-3_1.pomdpx',
-                 training_period=150,
+                 training_period=5,
                  verbose=False,
                  history=True,
-                 history_len=15,
-                 maxsteps=15,
+                 history_len=5,
+                 maxsteps=5,
                  include_actions=True,
                  recurrent=True,
                  priority_replay=True,
                  training_delay=0,
-                 evaluation_period = 150): 
+                 evaluation_period = 5): 
         
         self.simulator = Simulator(file) 
         self.file=file
@@ -118,7 +118,7 @@ class simulatorMain():
         
 
     
-    def run(self, expert_buffer = True,
+    def run(self, expert_buffer = False,
             expert_training = False,
             presampling = False):
         """
