@@ -28,3 +28,38 @@ Date,Problem,Training Period ,Evaluation Period,History Length,Max Steps ,Floodi
 2020-09-30,"Rock Sample (3,1)",300,150,7,7,0.5,True,False,True,False,True,9.0,3.0100502794079302,True,False
 2020-09-30,"Rock Sample (3,1)",1000,150,10,10,0.3,True,False,True,False,True,0.26666666666666666,10.029932829919996,True,False
 2020-10-01,Tag,1000,1000,3,150,0.3,True,False,False,True,True,-148.934,13.147414137331284,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,True,False,True,-11.392,11.3675831632536,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,True,False,True,-3.1915,25.034819728718332,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,True,False,True,-7.025,13.858116708245376,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,True,False,True,-4.2915,17.065964705391337,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,True,False,True,-4.9515,35.847729043675756,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,False,False,True,-11.6835,8.097290337230271,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,False,False,True,-6.0295,21.954444392065177,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,False,False,True,-8.774,20.606728091118946,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,False,False,True,3.15,23.60981176557329,False,False
+2020-10-01,Tiger,300,2000,15,15,2,True,False,False,False,True,-7.641,12.150141232347178,False,False
+2020-10-01,Tiger,300,2000,15,15,5,True,False,False,False,True,-6.8105,20.6407027267612,False,False
+2020-10-01,Tiger,300,2000,15,15,5,True,False,False,False,True,-11.5405,11.293720990750057,False,False
+2020-10-02,Tiger,300,2000,15,15,5,True,False,False,False,True,-5.793,28.61652675993194,False,False
+2020-10-02,Tiger,300,2000,15,15,5,True,False,False,False,True,-4.7645,20.29305161186609,False,False
+2020-10-02,Tiger,300,2000,15,15,5,True,False,False,False,True,-8.0535,23.248653459799495,False,False
+2020-10-02,Tiger,300,2000,15,15,0,True,False,False,False,True,-6.6785,16.103937597776408,False,False
+2020-10-02,Tiger,300,2000,15,15,0,True,False,False,False,True,-10.2535,9.021636920002832,False,False
+2020-10-02,Tiger,300,2000,15,15,0,True,False,False,False,True,-11.2655,20.381062376672148,False,False
+2020-10-02,Tiger,300,2000,15,15,0,True,False,False,False,True,-7.861,14.728073094214812,False,False
+2020-10-02,Tiger,300,2000,15,15,0,True,False,False,False,True,-3.021,20.081389147542744,False,False
+2020-10-02,Tiger,1500,2000,15,15,0,True,False,False,False,True,-8.268,8.148397031753763,False,False
+2020-10-02,Tiger,1500,2000,15,15,0,True,False,False,False,True,-10.4515,12.557208666528854,False,False
+2020-10-02,Tiger,1500,2000,15,15,0,True,False,False,False,True,-9.368,8.076768728677841,False,False
+2020-10-02,Tiger,1500,2000,15,15,0,True,False,False,False,True,-7.476,15.51014849552307,False,False
+2020-10-02,Tiger,1500,2000,15,15,0,True,False,False,False,True,-5.232,11.62577977503827,False,False
+2020-10-03,"Rock Sample (7,8)",8000,2000,15,100,0,True,False,False,False,True,-26.73,24.456208886017848,False,False
+2020-10-03,"Rock Sample (3,1)",50,50,2,6,0,True,False,True,False,True,10.0,0.0,False,False
+2020-10-04,"Rock Sample (3,1)",5,5,2,6,0,True,False,False,False,True,-34.0,60.249481325568276,False,False
+2020-10-04,"Rock Sample (3,1)",5,5,2,6,0,True,False,False,False,True,10.0,0.0,False,False
+2020-10-04,"Rock Sample (3,1)",5,5,2,6,0,True,False,False,False,True,-104.0,8.94427190999916,False,False
+2020-10-04,"Rock Sample (3,1)",5,5,2,6,0,True,False,False,False,True,-102.0,4.47213595499958,False,False
+2020-10-04,"Rock Sample (3,1)",50,5,2,6,0,True,False,False,False,True,-12.0,49.193495504995376,False,False
+2020-10-04,"Rock Sample (3,1)",50,5,2,6,0,True,False,False,False,True,10.0,0.0,False,False
+2020-10-04,"Rock Sample (3,1)",50,5,2,6,0,True,False,False,False,True,10.0,0.0,False,False
+2020-10-04,"Rock Sample (3,1)",20,5,2,15,0,True,False,False,False,True,-100.0,0.0,False,False

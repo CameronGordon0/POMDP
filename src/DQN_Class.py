@@ -108,7 +108,7 @@ class DQN:
         self.epsilon = 1.0 
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.99
-        self.learning_rate = 0.01
+        self.learning_rate = 0.001
         self.tau = 0.05 # rate of averaging (for training networks) 
         
         self.state_matrix = state_matrix 
@@ -124,6 +124,8 @@ class DQN:
         self.model = self.create_model()
         
         self.target_model = self.create_model() 
+        
+        self.model.summary()
         
         #self.model = self.create_unet()
         #self.target_model = self.create_unet()
@@ -142,9 +144,9 @@ class DQN:
         
         
     def create_model(self,
-                     L1=15,
-                     L2=15,
-                     L3=15):
+                     L1=50,
+                     L2=50,
+                     L3=50):
         # defined L1,L2,L3 as the neurons in a layer 
         # each to try new architectures (e.g. autoencoding)
         
@@ -188,10 +190,11 @@ class DQN:
         
         if (self.useflooding):
             model.compile(loss=custom_loss_function,
-                          optimizer=Adam(lr=self.learning_rate)) 
+                          optimizer=Adam(lr=self.learning_rate),  metrics=['accuracy']) 
         else: 
             model.compile(loss=custom_loss_function,
-                          optimizer=Adam(lr=self.learning_rate)) 
+                          optimizer=Adam(lr=self.learning_rate),
+                          metrics=['accuracy']) 
         #model.compile(loss="mean_squared_error",
         #optimizer=Adam(lr=self.learning_rate)) 
         #model.compile(loss=keras.losses.Huber(),
@@ -400,7 +403,8 @@ class DQN:
             #print(target)
             #print('target',self.target_model.predict(new_state)[0])
             #print('model',self.model.predict(new_state)[0])
-            self.model.fit(state, target, epochs=1, verbose=0)
+            self.model.fit(state, target, epochs=1, verbose=1)
+            #print('called')
             # note: original model here had epochs set as 1 
             # do not see significant performance improvement (indeed may become overfit) 
             # maybe changes to introduce PER? (to force more sampling of interesting spaces)
@@ -455,7 +459,7 @@ def custom_loss_function(y_true, y_pred):
     We set b as 0.05 here (value is a design decision)
     """
     
-    flooding_value = 0.3
+    flooding_value = 0
     loss = K.abs(K.square(y_pred - y_true)-flooding_value)+flooding_value
     print(loss)
     

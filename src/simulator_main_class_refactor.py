@@ -46,17 +46,17 @@ terminal_states = {'../examples/Tiger.pomdpx':None,
 
 class simulatorMain(): 
     
-    def __init__(self, file='../examples/Tag.pomdpx',
-                 training_period=1000,
+    def __init__(self, file='../examples/rockSample-3_1.pomdpx',
+                 training_period=20,
                  verbose=False,
                  history=True,
-                 history_len=3,
-                 maxsteps=150,
+                 history_len=2,
+                 maxsteps=15,
                  include_actions=True,
                  recurrent=False,
                  priority_replay=True,
                  training_delay=0,
-                 evaluation_period = 1000): 
+                 evaluation_period = 5): 
         
         self.simulator = Simulator(file) 
         self.file=file
@@ -106,7 +106,7 @@ class simulatorMain():
         
         self.final_result = 0 
         self.std_deviation = 0 
-        self.flooding_value = 0.3
+        self.flooding_value = 0
         
         
         self.observation_space_length = self.get_observation_space() 
@@ -136,7 +136,7 @@ class simulatorMain():
     
     def run(self, expert_buffer = False,
             expert_training = False,
-            presampling = True):
+            presampling = False):
         """
         we could otherwise call this 'run' 
         contains these functionalities: 
@@ -154,7 +154,7 @@ class simulatorMain():
             self.expert_memories()
             self.dqn.replay() 
             self.dqn.target_train()
-            """
+            
             
             print("Pre Evaluating") 
             self.dqn.epsilon = 0 # set to fixed policy 
@@ -164,7 +164,7 @@ class simulatorMain():
                 #print(self.dqn.epsilon)
     
                 self.run_iteration(iteration, training = False, presampling = True) 
-            """
+            
         if (presampling): 
             if (expert_training): 
                 print("Sampling expert experiences")
@@ -180,6 +180,7 @@ class simulatorMain():
         
         
         if not (expert_training):
+            
             print("Training")
             self.dqn.epsilon = 1 # set to fixed policy 
             self.dqn.epsilon_min = 0.01
@@ -208,8 +209,13 @@ class simulatorMain():
     
             
             self.write_to_csv() 
-            self.plot_results() 
+            #self.plot_results() 
             self.record_results()
+            
+            self.dqn.model.save_weights('../Saved_Models/checkpoint')
+            
+            
+    
          
     
     # these are data conversion utilities 
@@ -537,6 +543,7 @@ class simulatorMain():
          
     
 if __name__ == '__main__': 
+    #for i in range(5):
     sim = simulatorMain()
     print('got here')
     sim.run() 
