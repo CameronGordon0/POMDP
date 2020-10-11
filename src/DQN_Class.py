@@ -85,7 +85,11 @@ class DQN:
                  Conv = False, 
                  PriorityExperienceReplay=True,
                  Deep=False,
-                 useflooding=True): 
+                 useflooding=True, 
+                 learning_rate = 0.01,
+                 batch_size = 32,
+                 network_width=50,
+                 flooding_value=0): 
         # define the action & the state shape 
         
         # this will probably involve concatinating the fully-observed parts of the state 
@@ -99,6 +103,7 @@ class DQN:
         #self.priority_array =
         #self.pq = queue.PriorityQueue(maxsize=2000)
         #print(self.pq)
+        self.network_width = network_width
         
         self.useflooding = useflooding
         self.flooding_value = 0
@@ -108,8 +113,9 @@ class DQN:
         self.epsilon = 1.0 
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.99
-        self.learning_rate = 0.001
+        self.learning_rate = learning_rate
         self.tau = 0.05 # rate of averaging (for training networks) 
+        self.batch_size = batch_size
         
         self.state_matrix = state_matrix 
         self.action_vector = action_vector
@@ -121,9 +127,13 @@ class DQN:
         self.PriorityExperienceReplay = PriorityExperienceReplay 
         self.Deep = Deep 
         
-        self.model = self.create_model()
+        self.model = self.create_model(L1 = self.network_width,
+                                              L2 = self.network_width, 
+                                              L3 = self.network_width) 
         
-        self.target_model = self.create_model() 
+        self.target_model = self.create_model(L1 = self.network_width,
+                                              L2 = self.network_width, 
+                                              L3 = self.network_width) 
         
         self.model.summary()
         
@@ -189,12 +199,12 @@ class DQN:
         model.add(Dense(len(self.action_vector)))
         
         if (self.useflooding):
-            model.compile(loss=custom_loss_function,
-                          optimizer=Adam(lr=self.learning_rate),  metrics=['accuracy']) 
+            model.compile(loss=self.custom_loss_function,
+                          optimizer=Adam(lr=self.learning_rate))#,  metrics=['accuracy']) 
         else: 
-            model.compile(loss=custom_loss_function,
-                          optimizer=Adam(lr=self.learning_rate),
-                          metrics=['accuracy']) 
+            model.compile(loss=self.custom_loss_function,
+                          optimizer=Adam(lr=self.learning_rate))#,
+                          #metrics=['accuracy']) 
         #model.compile(loss="mean_squared_error",
         #optimizer=Adam(lr=self.learning_rate)) 
         #model.compile(loss=keras.losses.Huber(),
@@ -335,7 +345,7 @@ class DQN:
     def replay(self):
         # note: need to modify this for PER (extract the TD-Error & sort the memory)
         
-        batch_size = 32 # batch size reduced to force earlier use of memory 
+        batch_size = self.batch_size # batch size reduced to force earlier use of memory 
         if len(self.memory) < batch_size: 
             return
         
@@ -403,7 +413,7 @@ class DQN:
             #print(target)
             #print('target',self.target_model.predict(new_state)[0])
             #print('model',self.model.predict(new_state)[0])
-            self.model.fit(state, target, epochs=1, verbose=1)
+            self.model.fit(state, target, epochs=1, verbose=0)
             #print('called')
             # note: original model here had epochs set as 1 
             # do not see significant performance improvement (indeed may become overfit) 
@@ -449,18 +459,18 @@ class DQN:
         
         return state 
     
-def custom_loss_function(y_true, y_pred): 
-    """
-    Implements a custom MSE loss function as described in 
-    https://towardsdatascience.com/how-to-create-a-custom-loss-function-keras-3a89156ec69b
-    
-    This is in order to use 'flooding'. (i.e. regularising the objective J*=|J-b|+b)
-    
-    We set b as 0.05 here (value is a design decision)
-    """
-    
-    flooding_value = 0
-    loss = K.abs(K.square(y_pred - y_true)-flooding_value)+flooding_value
-    print(loss)
-    
-    return loss
+    def custom_loss_function(self,y_true, y_pred): 
+        """
+        Implements a custom MSE loss function as described in 
+        https://towardsdatascience.com/how-to-create-a-custom-loss-function-keras-3a89156ec69b
+        
+        This is in order to use 'flooding'. (i.e. regularising the objective J*=|J-b|+b)
+        
+        We set b as 0.05 here (value is a design decision)
+        """
+        
+        #flooding_value = 0
+        loss = K.abs(K.square(y_pred - y_true)-self.flooding_value)+self.flooding_value
+        print(loss)
+        
+        return loss

@@ -46,23 +46,35 @@ terminal_states = {'../examples/Tiger.pomdpx':None,
 
 class simulatorMain(): 
     
-    def __init__(self, file='../examples/rockSample-3_1.pomdpx',
-                 training_period=20,
+    def __init__(self, file='../examples/Tiger.pomdpx',
+                 training_period=5,
                  verbose=False,
                  history=True,
-                 history_len=2,
+                 history_len=15,
                  maxsteps=15,
                  include_actions=True,
                  recurrent=False,
                  priority_replay=True,
                  training_delay=0,
-                 evaluation_period = 5): 
+                 evaluation_period = 5, 
+                 learning_rate=0.01,
+                 batch_size = 32,
+                 network_width=50,
+                 flooding_value=0,
+                 include_reward=False): 
         
         self.simulator = Simulator(file) 
         self.file=file
         self.verbose = verbose 
         self.training_period = training_period 
         self.evaluation_period = evaluation_period 
+        self.previous_reward = 0
+        
+        self.training_details = [] # diagnostics 
+        self.training_results_y = [] # note append is O(1) 
+        self.training_results_x = np.arange(0,training_period)
+        self.evaluation_results_y =[] 
+        self.evaluation_results_x = np.arange(0,evaluation_period) 
         
     
         self.history = history
@@ -77,18 +89,13 @@ class simulatorMain():
         self.recurrent = recurrent
         
         self.fixed_initial = False 
-        self.include_reward = False # note: this is an idea which we'll test later (including the reward to the observation)
+        self.include_reward = include_reward # note: this is an idea which we'll test later (including the reward to the observation)
         
         self.training_delay = training_delay 
         self.wide = False
         self.deep = False
 
         
-        self.training_details = [] # diagnostics 
-        self.training_results_y = [] # note append is O(1) 
-        self.training_results_x = np.arange(0,training_period)
-        self.evaluation_results_y =[] 
-        self.evaluation_results_x = np.arange(0,evaluation_period) 
         
         self.expert_buffer = [] 
         self.preloaded_buffer = {}
@@ -106,14 +113,21 @@ class simulatorMain():
         
         self.final_result = 0 
         self.std_deviation = 0 
-        self.flooding_value = 0
+        self.flooding_value = flooding_value
         
         
         self.observation_space_length = self.get_observation_space() 
 
         self.reset() 
         self.expert = False
-        self.random_training = False
+        self.random_training = False 
+        self.learning_rate = learning_rate
+        
+        self.batch_size = batch_size 
+        self.network_width = network_width 
+        
+
+
         
 
         
@@ -125,10 +139,15 @@ class simulatorMain():
                        history=self.history,
                        DRQN=self.recurrent,
                        PriorityExperienceReplay = self.priority_replay, 
-                       Deep = self.deep) 
+                       Deep = self.deep,
+                       learning_rate = self.learning_rate,
+                       batch_size = self.batch_size,
+                       network_width=self.network_width,
+                       flooding_value=self.flooding_value) 
         
         self.dqn.epsilon_decay = np.exp((np.log(0.01))/(0.5*self.training_period)) 
         self.dqn.training_delay = self.training_delay # may draft without training delay 
+        
         
         
         
@@ -146,6 +165,9 @@ class simulatorMain():
         
         """
         
+
+
+        
         
         
         if (expert_buffer):
@@ -155,16 +177,17 @@ class simulatorMain():
             self.dqn.replay() 
             self.dqn.target_train()
             
-            
+            """
             print("Pre Evaluating") 
             self.dqn.epsilon = 0 # set to fixed policy 
             self.dqn.epsilon_min = 0
             #print(self.dqn.epsilon)
-            for iteration in range(self.evaluation_period): 
+            for iteration in range(10): 
                 #print(self.dqn.epsilon)
     
-                self.run_iteration(iteration, training = False, presampling = True) 
-            
+                self.run_iteration(iteration, training = False, presampling = False) 
+        """
+        
         if (presampling): 
             if (expert_training): 
                 print("Sampling expert experiences")
@@ -204,10 +227,11 @@ class simulatorMain():
                 if i%10 ==0: 
                     print("it",i,total/(i+1))
             print("Final", total/self.evaluation_period)
+            print("Total",total,"eval period",self.evaluation_period)
             self.final_result = total/self.evaluation_period
             self.std_deviation = statistics.stdev(self.evaluation_results_y)
     
-            
+            self.evaluation_to_csv()
             self.write_to_csv() 
             #self.plot_results() 
             self.record_results()
@@ -246,6 +270,7 @@ class simulatorMain():
         #print(old_history.shape,new_observation.shape)
         self.history_space = self.history_space[1:] # copies the old history less the oldest observation 
         self.history_space = np.append(self.history_space,self.numpy_observation,axis=0) 
+
         
         
         #print('old',self.old_history)
@@ -282,6 +307,9 @@ class simulatorMain():
             for key in self.simulator.observation_key_list: 
                 length += len(self.simulator.observation_names[key]) 
             zero_space[0][length+self.previous_action_index] = 1 
+            
+        if self.include_reward:
+            zero_space[0][-1] = self.previous_reward
             
         #zero_space.reshape(zero_space,(1,self.observation_space_length))
         #print(zero_space.shape)
@@ -384,6 +412,7 @@ class simulatorMain():
             
             next_state, step_observation, step_reward, observable_state = self.simulator.step(action_taken, self.current_state)
             total_reward += step_reward 
+            self.previous_reward = step_reward
             
             if (expert_training): 
                 print('reward',step_reward)
@@ -490,7 +519,10 @@ class simulatorMain():
                          self.recurrent, self.expert,
                          self.random_training, self.priority_replay, 
                          self.final_result, self.std_deviation,
-                         self.deep,self.wide])
+                         self.deep,self.wide,self.learning_rate,
+                         self.batch_size, self.network_width,
+                         self.include_reward]
+                         )
                 
     def expert_memories(self): 
         
@@ -526,7 +558,28 @@ class simulatorMain():
                     
                 #print(self.old_history)
                 #print(self.history_space)
+    def evaluation_to_csv(self): 
+        """
+        Writes the following diagnostics to a csv file: 
+            ['Episode','Step','Action', 'Observation', 'Fully Observed State', 'State','Step Reward','Total Reward','Q-values']
+            
+        Need to have a process for writing the file name. Best idea is simply model_name. Avoids creating too many files. 
         
+        """
+        
+        with open('../Results/'+model_name[self.file]+'_eval.csv','a+',newline='') as myFile: 
+            wr = csv.writer(myFile, quoting=csv.QUOTE_ALL) # note: quoting may change the readout 
+            wr.writerow([date.today(), model_name[self.file], 
+                         self.training_period, self.evaluation_period,
+                         self.history_len, self.maxsteps,
+                         self.flooding_value, self.include_actions,
+                         self.recurrent, self.expert,
+                         self.random_training, self.priority_replay, 
+                         self.final_result, self.std_deviation,
+                         self.deep,self.wide,self.learning_rate,
+                         self.batch_size, self.network_width,
+                         self.include_reward])
+            wr.writerow(self.evaluation_results_y)
                 
     def check_if_terminal(self): 
         """
@@ -543,7 +596,49 @@ class simulatorMain():
          
     
 if __name__ == '__main__': 
-    #for i in range(5):
-    sim = simulatorMain()
-    print('got here')
-    sim.run() 
+
+    for include_reward in [True,False]:
+        run_count = 0 
+        file = '../examples/rockSample-3_1.pomdpx'
+        for period in [300]:
+            for network_width in [15,50]:
+                for learning_rate in [0.001]:
+                    for recurrent in [True, False]:
+                        
+                        
+                        run_count +=1 
+                        
+                        
+                        print('Run Count ',run_count,'includereward', include_reward, 'lr',learning_rate)
+                        sim = simulatorMain(file = file,recurrent=recurrent,history_len=5,maxsteps=10,
+                                            training_period=period,evaluation_period=period,learning_rate=learning_rate, 
+                                            network_width=15, include_reward=include_reward)
+                        sim.run(expert_buffer=True)
+                        sim = simulatorMain(file = file, recurrent=recurrent,history_len=5,maxsteps=10,
+                                            training_period=period,evaluation_period=period,learning_rate=learning_rate, 
+                                            network_width=15, include_reward=include_reward)
+                        
+                        sim.run()
+                                
+        """
+        run_count = 0 
+        file = '../examples/rockSample-3_1.pomdpx'
+        for network_width in [50]:
+            for learning_rate in [0.001]:
+                sim = simulatorMain(file = file, history_len=5, maxsteps=10, learning_rate=learning_rate, 
+                                    network_width=network_width, include_reward=include_reward)
+                
+                run_count +=1 
+                
+                
+                print(file, 'Run Count ', run_count, 'width', network_width, 'lr', learning_rate)
+                sim.run()
+                sim.run(expert_buffer=True)
+                
+        file = '../examples/rockSample-7_8.pomdpx'
+        sim = simulatorMain(file = file, training_period=1000, evaluation_period=300,
+                            history_len=15, maxsteps=40, learning_rate=0.001, 
+                                    network_width=50, include_reward=include_reward)
+        sim.run()
+        """
+
