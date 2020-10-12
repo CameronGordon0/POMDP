@@ -47,7 +47,7 @@ terminal_states = {'../examples/Tiger.pomdpx':None,
 class simulatorMain(): 
     
     def __init__(self, file='../examples/Tiger.pomdpx',
-                 training_period=5,
+                 training_period=150,
                  verbose=False,
                  history=True,
                  history_len=15,
@@ -56,12 +56,14 @@ class simulatorMain():
                  recurrent=False,
                  priority_replay=True,
                  training_delay=0,
-                 evaluation_period = 5, 
+                 evaluation_period = 150, 
                  learning_rate=0.01,
                  batch_size = 32,
                  network_width=50,
                  flooding_value=0,
-                 include_reward=False): 
+                 include_reward=False,
+                 LSTM_only=False,
+                 LSTM_len=0): 
         
         self.simulator = Simulator(file) 
         self.file=file
@@ -94,6 +96,8 @@ class simulatorMain():
         self.training_delay = training_delay 
         self.wide = False
         self.deep = False
+        self.LSTM_only = LSTM_only 
+        self.LSTM_len = LSTM_len
 
         
         
@@ -143,7 +147,9 @@ class simulatorMain():
                        learning_rate = self.learning_rate,
                        batch_size = self.batch_size,
                        network_width=self.network_width,
-                       flooding_value=self.flooding_value) 
+                       flooding_value=self.flooding_value,
+                       LSTM_only=self.LSTM_only,
+                       LSTM_len=self.LSTM_len) 
         
         self.dqn.epsilon_decay = np.exp((np.log(0.01))/(0.5*self.training_period)) 
         self.dqn.training_delay = self.training_delay # may draft without training delay 
@@ -521,7 +527,7 @@ class simulatorMain():
                          self.final_result, self.std_deviation,
                          self.deep,self.wide,self.learning_rate,
                          self.batch_size, self.network_width,
-                         self.include_reward]
+                         self.include_reward,self.LSTM_only,self.LSTM_len]
                          )
                 
     def expert_memories(self): 
@@ -578,7 +584,7 @@ class simulatorMain():
                          self.final_result, self.std_deviation,
                          self.deep,self.wide,self.learning_rate,
                          self.batch_size, self.network_width,
-                         self.include_reward])
+                         self.include_reward,self.LSTM_only,self.LSTM_len])
             wr.writerow(self.evaluation_results_y)
                 
     def check_if_terminal(self): 
@@ -597,29 +603,28 @@ class simulatorMain():
     
 if __name__ == '__main__': 
 
-    for include_reward in [True,False]:
+    for LSTM_only in [False,True]:
         run_count = 0 
-        file = '../examples/rockSample-3_1.pomdpx'
-        for period in [300]:
-            for network_width in [15,50]:
-                for learning_rate in [0.001]:
-                    for recurrent in [True, False]:
-                        
-                        
-                        run_count +=1 
-                        
-                        
-                        print('Run Count ',run_count,'includereward', include_reward, 'lr',learning_rate)
-                        sim = simulatorMain(file = file,recurrent=recurrent,history_len=5,maxsteps=10,
-                                            training_period=period,evaluation_period=period,learning_rate=learning_rate, 
-                                            network_width=15, include_reward=include_reward)
-                        sim.run(expert_buffer=True)
-                        sim = simulatorMain(file = file, recurrent=recurrent,history_len=5,maxsteps=10,
-                                            training_period=period,evaluation_period=period,learning_rate=learning_rate, 
-                                            network_width=15, include_reward=include_reward)
-                        
-                        sim.run()
+        file = '../examples/Tag.pomdpx'
+        period = 300 
+        maxsteps = 30
+        learning_rate = 0.001
+        
+        sim = simulatorMain(file,history_len=2,maxsteps=maxsteps,training_period=period,evaluation_period=period)
+        sim.run(expert_buffer=True)
+        
+        """
+        for LSTM_len in [2,5,20]:
+            for history_len in [1,2,5,10]:
+                for expert_buffer in [True]:
+                    print('LSTM_only','history',history_len,'LSTM_len',LSTM_len,'expert',expert_buffer)
+                    sim = simulatorMain(file,history_len=history_len,maxsteps=maxsteps,learning_rate=learning_rate,
+                                        LSTM_only=LSTM_only,LSTM_len=LSTM_len,
+                                        training_period=period,evaluation_period=period)
+                    sim.run()
+                    #sim.run(expert_buffer=expert_buffer)
                                 
+        """
         """
         run_count = 0 
         file = '../examples/rockSample-3_1.pomdpx'

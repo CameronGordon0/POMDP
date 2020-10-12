@@ -89,7 +89,9 @@ class DQN:
                  learning_rate = 0.01,
                  batch_size = 32,
                  network_width=50,
-                 flooding_value=0): 
+                 flooding_value=0, 
+                 LSTM_only = False,
+                 LSTM_len = 0): 
         # define the action & the state shape 
         
         # this will probably involve concatinating the fully-observed parts of the state 
@@ -107,6 +109,8 @@ class DQN:
         
         self.useflooding = useflooding
         self.flooding_value = 0
+        self.LSTM_only = LSTM_only 
+        self.LSTM_len = LSTM_len
         
         
         self.gamma = 0.99 
@@ -167,35 +171,42 @@ class DQN:
         #action_shape = self.action_vector.shape 
         print('DQN state shape',state_shape)
         
-        if self.Conv: 
-            state_shape = (state_shape[0],state_shape[1],1)
-            model.add(Conv2D(filters=64,kernel_size = 2,input_shape=state_shape,activation="relu"))
-            #model.add(MaxPooling2D(pool_size=2))
-            #model.add(Conv2D(filters=32,kernel_size = 2,activation="relu"))
-            #model.add(MaxPooling2D(pool_size=2))
-            #model.add(Conv2D(filters=16,kernel_size = 2,activation="relu"))
-            #model.add(MaxPooling2D(pool_size=2))
-        else:
-            model.add(Dense(L1, input_shape=state_shape, 
-            activation="relu"))
-        model.add(Dense(L2, activation="relu"))
-        if self.Deep:
-            model.add(Dense(L2, activation="relu"))
-            model.add(Dense(L2, activation="relu"))
-            model.add(Dense(L2, activation="relu"))
-            model.add(Dense(L2, activation="relu"))
-            model.add(Dense(L2, activation="relu"))
+        if not self.LSTM_only:
+
+            if self.Conv: 
+                state_shape = (state_shape[0],state_shape[1],1)
+                model.add(Conv2D(filters=64,kernel_size = 2,input_shape=state_shape,activation="relu"))
+                #model.add(MaxPooling2D(pool_size=2))
+                #model.add(Conv2D(filters=32,kernel_size = 2,activation="relu"))
+                #model.add(MaxPooling2D(pool_size=2))
+                #model.add(Conv2D(filters=16,kernel_size = 2,activation="relu"))
+                #model.add(MaxPooling2D(pool_size=2))
+            else:
+                model.add(Dense(L1, input_shape=state_shape, 
+                activation="relu"))
             
-        if self.Dropout: 
-            model.add(Dropout(0.1))
-        model.add(Dense(L3, activation="relu"))
-        
-        if self.history == True and not self.DRQN: # this one's interesting - it doesn't like Flatten & LSTM together for dimension reasons 
-            model.add(Flatten())
+            model.add(Dense(L2, activation="relu"))
+            if self.Deep:
+                model.add(Dense(L2, activation="relu"))
+                model.add(Dense(L2, activation="relu"))
+                model.add(Dense(L2, activation="relu"))
+                model.add(Dense(L2, activation="relu"))
+                model.add(Dense(L2, activation="relu"))
+                
+            if self.Dropout: 
+                model.add(Dropout(0.1))
+            model.add(Dense(L3, activation="relu"))
             
-        if self.DRQN: 
-            model.add(LSTM(50))
-        
+            if self.history == True and not self.DRQN: # this one's interesting - it doesn't like Flatten & LSTM together for dimension reasons 
+                model.add(Flatten())
+                
+            if self.DRQN: 
+                model.add(LSTM(50))
+                
+        if self.LSTM_only:
+            model.add(LSTM(self.LSTM_len,input_shape = state_shape))
+            print('added lstm')
+            
         model.add(Dense(len(self.action_vector)))
         
         if (self.useflooding):
