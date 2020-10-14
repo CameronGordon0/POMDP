@@ -8,7 +8,7 @@ import re
 
 def parser(): 
     write = []
-    with open('tag_despot_training.txt') as f: 
+    with open('rock_sample_despot.txt') as f: 
         lines = f.readlines() 
         columns = [] 
         
@@ -43,6 +43,7 @@ def parser():
                 #line = re.split(':,',line)
                 line = line.split(' ')
                 Observed_state = line[0]
+                print(Observed_state)
                 
                 
                 #print(line[0])
@@ -65,9 +66,10 @@ def parser():
             if 'Simulation terminated' in line: 
                 Full_line = True
             if Full_line:
-                write.append([Round, Step, Observation,Observed_state, Action, Reward])
+                write.append([Round, Observation,Observed_state, Action, Reward])
                 Full_line = False
-    with open('TagA.csv','a+',newline='') as file: 
+    
+    with open('rock_sample_7_8.csv','a+',newline='') as file: 
         import csv 
         wr = csv.writer(file,quoting=csv.QUOTE_ALL)
         for row in write: 
