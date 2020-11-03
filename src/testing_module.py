@@ -153,7 +153,7 @@ def tester(model,file,
            evaluation_period, 
            maxsteps,
            history_len,
-           recurrency,include_actions,prioritised_experience_replay,include_reward, results,expert): 
+           recurrency,include_actions,prioritised_experience_replay,include_reward, results,expert,flooding): 
     start = datetime.now() 
     sim = simulatorMain(file=file,
                         training_period=training_period,
@@ -163,7 +163,7 @@ def tester(model,file,
                         include_actions=include_actions,
                         recurrent=recurrency,
                         priority_replay=prioritised_experience_replay,
-                        include_reward=include_reward)
+                        include_reward=include_reward,flooding_value=flooding)
     
     sim.run(expert)
     x = sim.training_results_x
@@ -195,19 +195,22 @@ def tester(model,file,
     
 
 
-def run_tests(prioritised=False,moving_average=True,av_len=8,save_fig=True,expert=False): 
+def run_tests(model='Rock Sample (7,8)',prioritised=False,moving_average=True,av_len=8,save_fig=True,expert=False,flooding=0): 
     
     
-    model = 'Tag'
-    training_period = 150
-    evaluation_period=150
+    #model = 'Rock Sample (7,8)'
+    training_period = 15
+    evaluation_period=15
     history = True 
-    history_len = 5
+    history_len = 10
     control = 'DQN' 
     #recurrency = False 
     maxsteps = 30  
     #include_actions = False
     #prioritised = True 
+    if model == 'Tiger': 
+        maxsteps = 15 
+        history_len = 15
     
     
     file = get_file(model) 
@@ -222,9 +225,10 @@ def run_tests(prioritised=False,moving_average=True,av_len=8,save_fig=True,exper
     dqn_seen = False
     
     results = {} 
-    for recurrency in bool_list: 
+    for recurrency in [True,False]: 
         for include_actions in bool_list: 
             for prioritised_experience_replay in [prioritised]: 
+                print('action',include_actions,'recurrent',recurrency,'reward','false')
                 results = tester(model,file,
                                  training_period=training_period, 
                                  evaluation_period=evaluation_period, 
@@ -232,7 +236,10 @@ def run_tests(prioritised=False,moving_average=True,av_len=8,save_fig=True,exper
                                  history_len=history_len,
                                  recurrency=recurrency,include_actions=include_actions,
                                  prioritised_experience_replay=prioritised_experience_replay,
-                                 results=results,include_reward=False,expert=expert)
+                                 results=results,include_reward=False,expert=expert,
+                                 flooding=flooding)
+
+        print('action',include_actions,'recurrent',recurrency,'reward','true')
 
         results = tester(model,file,
                         training_period=training_period, 
@@ -242,7 +249,8 @@ def run_tests(prioritised=False,moving_average=True,av_len=8,save_fig=True,exper
                         recurrency=recurrency,
                         include_actions=True,
                         prioritised_experience_replay=prioritised,
-                        include_reward=True,results=results,expert=expert)
+                        include_reward=True,results=results,expert=expert,
+                        flooding=flooding)
                 
     for result in list(results.values()):
         x = result[0] 
@@ -311,8 +319,13 @@ def movingaverage(values, window):
  
 #x = [1,2,3,4,5,6,7,8,9,10]
 #y = [3,5,2,4,9,1,7,5,9,1]
- 
-#yMA = movingaverage(y,3)
-for expert in [False]:
-    for prioritised in [False,True]: 
-        run_tests(prioritised=prioritised,expert=expert) 
+""" 
+for i in range(1):
+    for flooding in [0,0.1,0.25,0.5,2,5]:
+        for model in ['Tiger','Tag', 'Rock Sample (3,1)', 'Rock Sample (7,8)']:
+            for expert in [True,False]:
+                for prioritised in [False,True]: 
+                    run_tests(model=model,prioritised=prioritised,expert=expert,flooding=flooding) 
+
+"""
+run_tests()
