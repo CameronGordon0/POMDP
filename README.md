@@ -19,6 +19,4 @@ Modules for automated production of results, diagnostics, and visualisations are
 
 Modules are included for the construction of expert buffers from outputs from the DESPOT POMDP solver described in Ye et al. (2017) code: (https://github.com/AdaCompNUS/despot). These may be passed to initialise the memory buffer for the POMDP simulator. 
 
-Modules for the creating of OpenAI Gym environments from POMDPX files are contained in the custom_gym folder. Integration with OpenAI Baselines has not yet been achieved.
-
 Developed by Cameron Gordon at the University of Queensland, supervised by Dr. Nan Ye as part of a thesis for a Masters of Science (Mathematics).
