@@ -58,7 +58,7 @@ class simulatorMain():
                  training_delay=0,
                  evaluation_period = 150, 
                  learning_rate=0.01,
-                 batch_size = 32,
+                 batch_size = 64,
                  network_width=50,
                  flooding_value=0,
                  include_reward=False,
@@ -535,7 +535,7 @@ class simulatorMain():
         self.reset()
         current_iteration = -1
         
-        with open('../Expert_training/'+model_name[self.file]+'.csv', newline='') as myFile: 
+        with open('../Expert_training/'+model_name[self.file]+'.csv', newline='',encoding='utf-8-sig') as myFile: 
             reader = csv.DictReader(myFile,quoting=csv.QUOTE_ALL) 
             for row in reader: 
                 if (int(row['iteration'])>current_iteration): 
