@@ -4,9 +4,11 @@
 """
 This file contains the functions for the pomdpx parser class. 
 
-This project extends a python pomdpx parser https://github.com/larics/python-pomdp to handle special characters ('*','-') and special terms ('identity', 'uniform') consistent with the PomdpX File Format as documented at https://bigbird.comp.nus.edu.sg/pmwiki/farm/appl/index.php?n=Main.PomdpXDocumentation. 
+This project extends a python pomdpx parser https://github.com/larics/python-pomdp to handle special characters ('*','-') and special terms ('identity', 'uniform') 
+consistent with the PomdpX File Format as documented at https://bigbird.comp.nus.edu.sg/pmwiki/farm/appl/index.php?n=Main.PomdpXDocumentation. 
 
-Note that the PomdpX format specified by the Approximate POMDP Planning Toolkit (APPL) allows for both Table (TBL) and Directed Acyclic Graph (DAG) formats for the parameters. Only the TBL format has been implemented for this project.
+Note that the PomdpX format specified by the Approximate POMDP Planning Toolkit (APPL) allows for both Table (TBL) 
+and Directed Acyclic Graph (DAG) formats for the parameters. Only the TBL format has been implemented for this project.
 
 """
 
@@ -114,9 +116,6 @@ def get_states(root):
 
 
 
-
-
-
 """
 The below functions fill the key data structures for the problem (Initial Belief, Transition Function, Observation Function, and Reward Function). 
 
@@ -139,20 +138,16 @@ def get_initial_belief(root):
                 parentlist = parent.text.split(' ') 
 
                 initial_belief = initialise_matrix(root,varlist,parentlist)
-                #print('init',initial_belief)
             
             for param in cond.findall('Parameter'): 
-                #print('???',param.text)
                 if 'type' in param.attrib:
                     if param.attrib['type'] != 'TBL': 
                         print('Only TBL Parameter Implemented')
                         raise ValueError 
                 for entry in param.findall('Entry'): 
-                    #print(entry)
                     fill_table(root,varlist,parentlist,entry,initial_belief)
                     
             INITIAL_DICT[name] = initial_belief
-            #print(INITIAL_DICT)
                     
     return INITIAL_DICT 
 
@@ -163,14 +158,12 @@ def get_state_transition(root):
     Return in the form of a list of numpy arrays of dimensions [action][state][new state], where each entry in the list refers to a different conditional probability in the problem. 
 
     """
-
     # get the T(s'|s,a)
     
     for child in root.findall('StateTransitionFunction') :
         
         CONDITION_DICT = {}
         VARIABLE_DICT = {} 
-        #CONDITION_TABLE = []
         for cond in child.findall('CondProb'): 
             name = 'NULL'
             for var in cond.findall('Var'): 
@@ -184,7 +177,6 @@ def get_state_transition(root):
                 parentlist = parent.text.split(' ') 
                 VARIABLE_DICT[name] = parentlist 
                 state_transition_table = initialise_matrix(root,varlist,parentlist)
-                #print('ppp',state_transition_table.shape)
             
             for param in cond.findall('Parameter'): 
                 if 'type' in param.attrib:
@@ -194,9 +186,7 @@ def get_state_transition(root):
                 
                 for entry in param.findall('Entry'): 
                     fill_table(root,varlist,parentlist,entry,state_transition_table)
-            #CONDITION_TABLE.append(state_transition_table)
             CONDITION_DICT[name]=state_transition_table
-    #print('???',CONDITION_DICT)
     return CONDITION_DICT, VARIABLE_DICT 
 
 def get_obs_function(root): 
@@ -224,7 +214,6 @@ def get_obs_function(root):
                 for entry in param.findall('Entry'): 
                     obs_table = fill_table(root,varlist,parentlist,entry,obs_table) 
             OBS_DICTIONARY[name] = obs_table 
-    #print(':::',OBS_DICTIONARY)
     return OBS_DICTIONARY
 
 
@@ -256,8 +245,6 @@ def get_reward_function(root):
                         # may need to change this???? 
                         
                         reward_table = get_numpy_reward(root,parentname,entry,instance, reward_table)
-    #print('reward_table',reward_table.shape)
-    #print(reward_table)
     return reward_table
 
 

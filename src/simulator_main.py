@@ -1,22 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon May 25 12:28:45 2020
 
-@author: camerongordon
 
-Difficulties for the simulator modules (issue with the different representations;
-                                        currently have three for most of the variables (dict, str, int)) 
-
-19/06/20 - aiming to include actions in the observation-space (ADQN, ADRQN). Only small modifications required. 
-
-19/9/20 - aiming to refactor the code to make it more readable / debuggable. Need to extract diagnostic information 
-
-May be worth rewriting this as a class. Would avoid the passing parameters around as current. 
-
-Currently the file is trying to do too much. Makes it very hard to read. 
-
-Need to use consistent terminology. Look at the POMDP simulator as example. 
+Note: the following file has been refactored. The simulator_main_class_refactor supercedes this file.
 """
 
 import numpy as np 
@@ -66,8 +53,7 @@ def history_queue(new_observation=None, old_history=None):
 def numpy_conversion(simulator, 
                      observed_current_state,
                      observation,
-                     history = False, # can probably leave most of the logic for the history out of this one ?
-                     # trick may be to reshape the vector in the main loop rather than messing around with something here 
+                     history = False, 
                      history_len=1,
                      include_actions=False,
                      previous_action_index=None): 
@@ -94,7 +80,6 @@ def numpy_conversion(simulator,
         length += len(simulator.state[i][0]) 
         
         observation_space[index] = 1
-        # suggested change observation_space[history_len-1][index]
         
         
     for i in observation: 
@@ -115,10 +100,7 @@ def numpy_conversion(simulator,
     if history == True: 
         observation_space = np.reshape(observation_space,(1,int(observation_space.shape[0])))
     
-    #print('numpyconv',observation_space)
-    #print(observation_space.shape)
-    
-    #print('numpy_conv',observation_space.shape)
+
     
     return observation_space 
 
@@ -367,49 +349,7 @@ def control_method(simulator,
                     dqn,
                     step_reward)
                 # history stack needs to be specified here. Add new observation, remove the old one 
-                """
-                cur_state = numpy_conversion(simulator,observable_state,observation,
-                                             history=history,include_actions=include_actions,
-                                             previous_action_index=previous_action_index)
-                obs_new_state = simulator.get_observable_state(next_state)
-                previous_action_index = action_index
-                new_state = numpy_conversion(simulator,obs_new_state,step_observation,
-                                             history=history,include_actions=include_actions,
-                                             previous_action_index=previous_action_index)
-                # because this refers to new state not next state (data_type difference) 
                 
-                if history == True: 
-                    cur_state = iteration_history
-                    new_state = history_queue(new_state, iteration_history)
-                     # need to handle the history 
-                    # handle this mainly through the history queue function 
-                    # it will have a separate history for the cur_state 
-                    # and the new_state 
-                    
-                else:
-                    pass 
-                
-                
-                if j >= maxsteps-1: # may want to hard-code a check for terminal state 
-                    done = True
-                    #print('took max steps')
-                    
-                # note this is obviously a hard-coding for the terminal state (not pomdpx generic)
-                if 'robot_0' in simulator.state_key_list:
-                    if state['robot_0']=='st':
-                        done = True 
-                    
-                dqn.remember(cur_state, action_index, step_reward, new_state, done) 
-                # need to see how this is handled by the dqn file 
-                """
-                # may need to do some thinking on how the stack is remembered 
-                """
-                This is the placement of the replay and train in the original model. 
-                There were some comments that it should be in the outer loop (e.g. after each iteration, not step). 
-                I agree, so testing it outside. 
-                dqn.replay()
-                dqn.target_train()
-                """
                 
             state = next_state
             total_reward += step_reward 
