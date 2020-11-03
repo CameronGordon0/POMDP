@@ -255,3 +255,4 @@ Date,Problem,Training Period ,Evaluation Period,History Length,Max Steps ,Floodi
 2020-10-12,Tag,300,300,1,30,0,True,False,False,False,True,-29.023333333333333,5.576118651859998,False,False,0.001,32,50,False,False,2
 2020-10-12,Tag,300,300,2,30,0,True,False,False,False,True,-30.03,0.5196152422706632,False,False,0.001,32,50,False,False,2
 2020-10-12,Tag,300,300,5,30,0,True,False,False,False,True,-29.81,4.392213389800006,False,False,0.001,32,50,False,False,2
+2020-11-03,Tiger,150,150,15,15,0,True,False,False,False,False,-14.56,23.667291166099673,False,False,0.01,64,50,False,False,0

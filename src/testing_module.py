@@ -6,30 +6,14 @@ Created on Sat Jun 20 12:17:02 2020
 @author: camerongordon
 
 
-This file automates the testing for multiple parameters 
+This file automates the testing for multiple parameters.
+
+Parameters should be changed directly within this file. 
 
 
-Note the main function from simulator_main 
+Note the main function from simulator_main_class_refactor
 
-def main(file = '../examples/rockSample-3_1.pomdpx', 
-         control = 'DQN', 
-         training_period = 30,
-         testing_period = 1,
-         verbose = False,
-         history = False,
-         history_len = 4,
-         maxsteps=50,
-         include_actions=True,
-         recurrent=False): 
-    simulator = Simulator(file)
-    simulator.print_model_information()
-    
-    x,y,details = control_method(simulator,control,training_period,
-                                 verbose=verbose,history=history,history_len=history_len,
-                                 maxsteps=maxsteps,include_actions=include_actions,
-                                 recurrent=recurrent)
-    
-    plot_results(x,y,model_name[file])
+
 """
 
 
@@ -195,11 +179,11 @@ def tester(model,file,
     
 
 
-def run_tests(model='Rock Sample (7,8)',prioritised=False,moving_average=True,av_len=8,save_fig=True,expert=False,flooding=0): 
+def run_tests(model='Tiger',prioritised=False,moving_average=True,av_len=8,save_fig=True,expert=False,flooding=0): 
     
     
     #model = 'Rock Sample (7,8)'
-    training_period = 15
+    training_period = 150
     evaluation_period=15
     history = True 
     history_len = 10
@@ -225,7 +209,7 @@ def run_tests(model='Rock Sample (7,8)',prioritised=False,moving_average=True,av
     dqn_seen = False
     
     results = {} 
-    for recurrency in [True,False]: 
+    for recurrency in [False]: 
         for include_actions in bool_list: 
             for prioritised_experience_replay in [prioritised]: 
                 print('action',include_actions,'recurrent',recurrency,'reward','false')

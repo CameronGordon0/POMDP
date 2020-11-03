@@ -4,13 +4,13 @@ Created on Sat Sep 19 12:27:22 2020
 
 @author: MrCameronGordon
 
-19/9/2020 - Attempting to refactor the simulator main into a class structure. 
+This is a refactored version of simulator_main. 
 
-Main aim is to improve readability, reduce cross dependency, and improve testing. 
+It contains utilities for simulating POMDPX environments, 
+and to test DQN implementations of solvers. 
 
-Another aim is potential unit testing. 
-
-pomdp_simulator is relatively cleanly structured. It may be worth shifting some methods here. 
+Commands are included for the use of expert buffers, automated diagnostic files, 
+producing graphs, and outputting results. 
 """
 
 import numpy as np 
@@ -98,13 +98,10 @@ class simulatorMain():
         self.deep = False
         self.LSTM_only = LSTM_only 
         self.LSTM_len = LSTM_len
-
-        
         
         self.expert_buffer = [] 
         self.preloaded_buffer = {}
 
-        
         
         self.state_key_list = self.simulator.state_key_list 
         self.observation_key_list = self.simulator.observation_key_list 
@@ -130,13 +127,6 @@ class simulatorMain():
         self.batch_size = batch_size 
         self.network_width = network_width 
         
-
-
-        
-
-        
-        
-
         
         self.dqn = DQN(self.action_list,
                        self.history_space,
@@ -170,11 +160,6 @@ class simulatorMain():
         3) plots_results
         
         """
-        
-
-
-        
-        
         
         if (expert_buffer):
             self.expert = True
@@ -244,9 +229,7 @@ class simulatorMain():
             
             self.dqn.model.save_weights('../Saved_Models/checkpoint')
             
-            
-    
-         
+
     
     # these are data conversion utilities 
     def history_queue(self, new_observation=None, old_history=None): 
@@ -472,7 +455,6 @@ class simulatorMain():
         
     # these are diagnostic / results utilities 
 
-    
     
     
     def plot_results(self): 

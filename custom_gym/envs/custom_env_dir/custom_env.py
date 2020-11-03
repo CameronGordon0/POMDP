@@ -7,6 +7,8 @@ import random
 
 # Note: https://stable-baselines.readthedocs.io/en/master/guide/custom_env.html 
 
+# Code for specifying custom gym environment with POMDPX information. 
+
 from pathlib import Path 
 import os, inspect, sys
 
@@ -70,7 +72,6 @@ class CustomEnv(gym.Env):
                                             self.observable_state,
                                             self.observation) # requires an observation. initial observation is random?
         
-        #print("!!!!!",self.numpy_space.shape)
         
         self.observation_space = spaces.Box(low=0,high=1,shape=self.numpy_space.shape) # putting low = 0 and high = 1 as one-hot encoding 
         
@@ -122,7 +123,7 @@ class CustomEnv(gym.Env):
         print(new_state)
         #print(obs_dict) 
         print(step_reward) 
-        print(observable_state) # is this working properly? appears to be the state before the actions is taken 
+        print(observable_state) 
         
         # needs to return 'observation, reward, done, info' for the openAI API 
         # observation needs to be an openAI space. i.e. BOX 

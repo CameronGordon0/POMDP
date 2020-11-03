@@ -6,6 +6,10 @@ Created on Thu Jun 11 19:12:49 2020
 @author: camerongordon
 
 env-reregister error solved by using https://stackoverflow.com/questions/61281918/custom-environments-for-gym-error-cannot-re-register-id 
+
+This file contains code for creating a custom gym environment and populating it with information specified in POMDPX format. 
+
+Note: issues remain integrating this with OpenAI Baselines. 
 """
 
 from pathlib import Path 
@@ -31,15 +35,6 @@ if path_src not in sys.path:
     sys.path.insert(0,path_src)
 
 
-#for i in sys.path:
-#    print(i)
-
-
-
-
-
-#print(parser_path)
-
 #from parser_path import *
 
 
@@ -54,11 +49,9 @@ import envs.custom_env_dir
 
 
 env = gym.make('CustomEnv-v0')
-#print(env.action_space.sample())
 obs, reward, done, info = env.step(env.action_space.sample())
 print(obs)
-#env.step()
-#env.reset() 
+
 
 """
 Note that stable baselines requires that Tensorflow be from versions 1.8.0 to 1.15.0 
